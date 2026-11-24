@@ -93,7 +93,8 @@ table.sb{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 table.sb th{font:700 11px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:right;padding:6px 4px;border-bottom:1px solid var(--line)}
 table.sb th:first-child,table.sb td:first-child{text-align:left}
 table.sb td{padding:9px 4px;text-align:right;border-bottom:1px solid var(--line)}
-table.sb td.tot{font:800 16px/1 var(--display)}
+table.sb td.lead{font:800 16px/1 var(--display);color:var(--accent)}
+table.sb td.lead::before{content:"★ ";font-size:12px}
 table.sb tr.me td{font-weight:700}
 .banner{padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--gold) 28%,var(--card));font-size:14px}
 .err{background:color-mix(in srgb,var(--accent) 22%,var(--card))}
@@ -365,7 +366,7 @@ function rulesCard(closed) {
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px" class="small">
     <p><b>Spot on:</b> 1 point for each item you put in exactly the same place as the ranker.</p>
     <p><b>In sync:</b> 1 point for each pair of items you put in the same order as the ranker. With 5 items there are 10 pairs. This is a rank correlation (Kendall's tau): 10 of 10 means identical order, 0 of 10 means exactly reversed, about 5 is a coin flip.</p>
-    <p>Your total is both added together. The scoreboard keeps each one separately, plus your average tau across turns.</p></div></details></section>`;
+    <p>The two scores are never added together. Each has its own leader, and the scoreboard also shows your average tau across turns.</p></div></details></section>`;
 }
 function shareCard() {
   return `<section class="card"><div class="share"><div style="min-width:0;display:flex;flex-direction:column;gap:8px">
@@ -437,33 +438,40 @@ function rankView() {
 }
 function revealView() {
   const r = state.round, res = r.results || {};
-  const guessers = Object.keys(res).sort((a, b) => (res[b].exact + res[b].agree) - (res[a].exact + res[a].agree));
+  const guessers = Object.keys(res).sort((a, b) => res[b].exact - res[a].exact || res[b].agree - res[a].agree);
   let out = `<section class="card ans"><p class="eyebrow">Turn ${state.turn + 1} of ${state.order.length} · the answer</p><h2>${esc(name(r.selector))}'s real ranking</h2>${rankList(r.answer, r.items)}</section>`;
   out += `<section class="card"><h2>The guesses</h2><div class="reveal-grid">` + (guessers.length ? guessers.map(g => {
     const x = res[g];
-    return `<div style="display:flex;flex-direction:column;gap:6px"><div class="guess-h"><h3>${esc(name(g))}${g === me.id ? " (you)" : ""}</h3><span class="pts">+${x.exact + x.agree}</span></div>
+    return `<div style="display:flex;flex-direction:column;gap:6px"><div class="guess-h"><h3>${esc(name(g))}${g === me.id ? " (you)" : ""}</h3></div>
       <p class="stats"><b>Spot on:</b> ${x.exact} of ${x.total ? r.items.length : 0} items · <b>In sync:</b> ${x.agree} of ${x.total} pairs (tau ${x.tau >= 0 ? "+" : ""}${x.tau.toFixed(2)})</p>${rankList(r.guesses[g], r.items, r.answer)}</div>`;
   }).join("") : `<p class="muted">Nobody guessed this round.</p>`) + `</div>
     <button class="primary full" data-act="advance">${state.turn + 1 >= state.order.length ? "See final scores" : "Next turn"}</button></section>`;
   return out + scoreCard();
 }
 function scoreRows() {
-  return state.players.map(p => { const s = state.scores[p.id] || { exact: 0, agree: 0, rounds: 0 }; return { p, ...s, tot: s.exact + s.agree }; })
-    .sort((a, b) => b.tot - a.tot || b.exact - a.exact);
+  return state.players.map(p => { const s = state.scores[p.id] || { exact: 0, agree: 0, rounds: 0 }; return { p, ...s, avg: s.rounds ? (s.tau || 0) / s.rounds : null }; })
+    .sort((a, b) => b.exact - a.exact || b.agree - a.agree);
 }
+function leaders(rows) { return { exact: Math.max(0, ...rows.map(r => r.exact)), agree: Math.max(0, ...rows.map(r => r.agree)) }; }
 function scoreCard(title) {
-  const rows = scoreRows();
-  return `<section class="card"><h2>${title || "Scoreboard"}</h2><div style="overflow-x:auto"><table class="sb"><thead><tr><th>Player</th><th>Spot on</th><th>In sync</th><th>Avg tau</th><th>Total</th></tr></thead><tbody>` +
-    rows.map((r, i) => `<tr class="${r.p.id === me.id ? "me" : ""}"><td>${i === 0 && r.tot > 0 ? "🏆 " : ""}${esc(r.p.name)}</td><td>${r.exact}</td><td>${r.agree}</td><td>${r.rounds ? ((r.tau || 0) / r.rounds >= 0 ? "+" : "") + ((r.tau || 0) / r.rounds).toFixed(2) : "–"}</td><td class="tot">${r.tot}</td></tr>`).join("") +
-    `</tbody></table></div></section>`;
+  const rows = scoreRows(); const lead = leaders(rows);
+  return `<section class="card"><h2>${title || "Scoreboard"}</h2><div style="overflow-x:auto"><table class="sb"><thead><tr><th>Player</th><th>Spot on</th><th>In sync</th><th>Avg tau</th></tr></thead><tbody>` +
+    rows.map(r => `<tr class="${r.p.id === me.id ? "me" : ""}"><td>${esc(r.p.name)}</td><td class="${lead.exact > 0 && r.exact === lead.exact ? "lead" : ""}">${r.exact}</td><td class="${lead.agree > 0 && r.agree === lead.agree ? "lead" : ""}">${r.agree}</td><td>${r.avg == null ? "–" : (r.avg >= 0 ? "+" : "") + r.avg.toFixed(2)}</td></tr>`).join("") +
+    `</tbody></table></div><p class="small muted">The two scores are kept separate. ★ marks the leader in each.</p></section>`;
 }
 function finalView() {
-  const rows = scoreRows(); const w = rows[0];
+  const rows = scoreRows(); const lead = leaders(rows);
+  const who = k => rows.filter(r => r[k] === lead[k]).map(r => esc(r.p.name)).join(" & ");
+  const pairsTotal = state.history.reduce((s, h) => s + (h.items.length * (h.items.length - 1)) / 2, 0);
   // most predictable ranker: highest average guess total when they were ranking
   const pred = {};
   state.history.forEach(h => { const v = Object.values(h.results); if (!v.length) return; const avg = v.reduce((s, x) => s + x.agree / x.total, 0) / v.length; pred[h.selector] = avg; });
   const pk = Object.keys(pred).sort((a, b) => pred[b] - pred[a])[0];
-  return `<section class="card"><p class="eyebrow">Game over</p><h1>${w && w.tot > 0 ? `${esc(w.p.name)} reads minds best` : "That's a wrap"}</h1>
+  return `<section class="card"><p class="eyebrow">Game over</p><h1>That's a wrap</h1>
+    <div class="reveal-grid">
+      <div><p class="eyebrow">Spot on leader</p><h2>${lead.exact > 0 ? `${who("exact")} · ${lead.exact}` : "Nobody yet"}</h2><p class="small muted">Most items in exactly the right place</p></div>
+      <div><p class="eyebrow">In sync leader</p><h2>${lead.agree > 0 ? `${who("agree")} · ${lead.agree}` : "Nobody yet"}</h2><p class="small muted">Most pairs in the same order as the ranker</p></div>
+    </div>
     ${pk ? `<p class="muted">Easiest to read: <b>${esc(name(pk))}</b>, guessers matched ${Math.round(pred[pk] * 100)}% of their pairs.</p>` : ""}</section>` +
     scoreCard("Final scores") +
     `<section class="card">${isHost() ? `<button class="primary full" data-act="advance">Play again with the same people</button>` : `<p class="muted">${esc(name(state.hostId))} can start another game.</p>`}</section>`;
