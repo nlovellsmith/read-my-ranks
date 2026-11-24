@@ -99,6 +99,19 @@ table.sb tr.me td{font-weight:700}
 .banner{padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--gold) 28%,var(--card));font-size:14px}
 .err{background:color-mix(in srgb,var(--accent) 22%,var(--card))}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:700;z-index:5;max-width:calc(100% - 32px)}
+
+.marquee{display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:6px 0 4px}
+.marquee .title{margin:0;font:800 clamp(44px,14.5vw,88px)/.9 var(--display);letter-spacing:-.03em;text-transform:uppercase;--purple:#7b5cff}
+.marquee .title .w{display:block;white-space:nowrap}
+.marquee .title .w.sm{font-size:.42em;letter-spacing:.04em;margin-bottom:.12em}
+.marquee .l{display:inline-block;color:var(--accent);animation:drop .7s cubic-bezier(.2,1.5,.45,1) both,wave 3.2s ease-in-out infinite;animation-delay:calc(var(--i) * 45ms),calc(var(--i) * -110ms)}
+.marquee .bars{display:flex;gap:6px;align-items:flex-end;height:60px}
+.marquee .bars span{display:grid;place-items:center;width:38px;border-radius:10px;font:800 17px/1 var(--display);color:var(--accent-ink);background:var(--accent);transform-origin:bottom;animation:grow .6s cubic-bezier(.2,1.4,.4,1) both;animation-delay:calc(var(--i) * 90ms + .5s)}
+@keyframes drop{from{transform:translateY(-.8em) rotate(-12deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes wave{0%,100%{color:var(--accent)}33%{color:var(--gold)}66%{color:var(--purple)}}
+@keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes bob{0%,100%{translate:0 0}50%{translate:0 -5px}}
+@media (prefers-reduced-motion:reduce){.marquee .l,.marquee .bars span{animation:none}}
 .hero-ranks{display:flex;gap:6px;align-items:flex-end}
 .hero-ranks span{display:grid;place-items:center;font:800 18px/1 var(--display);color:var(--accent-ink);background:var(--accent);border-radius:10px;width:40px}
 .foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
@@ -342,9 +355,8 @@ function view() {
   return body + footView();
 }
 function homeView() {
-  return `<section class="card" style="gap:16px">
-    <div class="hero-ranks" aria-hidden="true"><span style="height:56px">1</span><span style="height:44px">2</span><span style="height:34px">3</span><span style="height:26px">4</span><span style="height:20px">5</span></div>
-    <h1>How well do you know their ranks?</h1>
+  return `<section class="marquee"><h1 class="title" aria-label="Gideon’s Ranking Game"><span class="w sm" aria-hidden="true"><span class="l" style="--i:0">G</span><span class="l" style="--i:1">i</span><span class="l" style="--i:2">d</span><span class="l" style="--i:3">e</span><span class="l" style="--i:4">o</span><span class="l" style="--i:5">n</span><span class="l" style="--i:6">’</span><span class="l" style="--i:7">s</span></span><span class="w" aria-hidden="true"><span class="l" style="--i:8">R</span><span class="l" style="--i:9">a</span><span class="l" style="--i:10">n</span><span class="l" style="--i:11">k</span><span class="l" style="--i:12">i</span><span class="l" style="--i:13">n</span><span class="l" style="--i:14">g</span></span><span class="w" aria-hidden="true"><span class="l" style="--i:15">G</span><span class="l" style="--i:16">a</span><span class="l" style="--i:17">m</span><span class="l" style="--i:18">e</span></span></h1><div class="bars" aria-hidden="true"><span style="--i:0;height:58px">1</span><span style="--i:1;height:46px">2</span><span style="--i:2;height:36px">3</span><span style="--i:3;height:27px">4</span><span style="--i:4;height:20px">5</span></div></section><section class="card" style="gap:16px">
+    <h2>How well do you know their ranks?</h2>
     <p class="muted">Everyone adds five things. Each turn, one player ranks five of them and everyone else guesses the order. Play on your own phones from one link.</p>
     <div><label for="nm">Your name</label></div>
     <input type="text" id="nm" maxlength="24" autocomplete="nickname" placeholder="e.g. Sam" value="${esc(me.name || "")}">
