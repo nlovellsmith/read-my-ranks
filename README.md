@@ -5,6 +5,6 @@ A party game you play from one link on everyone's phone.
 1. Someone starts a game and shares the link or QR code.
 2. Everyone adds 5 things.
 3. Turns rotate: the ranker reads 5 things aloud and ranks them; everyone else guesses the ranker's order.
-4. Scoring: 1 point per item in exactly the right spot, plus Kendall's tau (rank correlation with the ranker), kept as a separate score.
+4. Scoring: 1 point per item in exactly the right spot, plus Spearman's rho and Kendall's tau (rank correlations with the ranker), each kept as a separate score.
 
 Single static `index.html`. Live sync runs through a free public MQTT broker (`wss://broker.hivemq.com:8884/mqtt`; override with `?broker=`). The phone that starts the game hosts the state.
