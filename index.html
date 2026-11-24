@@ -82,7 +82,8 @@ button.full{width:100%}
 .rl li .t{overflow-wrap:anywhere;min-width:0}
 .rl li.hit{background:color-mix(in srgb,var(--ok) 22%,var(--card))}
 .rl li .rk{font:800 15px/1 var(--display);color:var(--accent);text-align:center}
-.mark{font-size:13px;font-weight:700;color:var(--ok)}
+.mark{font-size:13px;font-weight:700;color:var(--ok);white-space:nowrap}
+.miss{font-size:12px;color:var(--muted);white-space:nowrap}
 .ans .rl li{background:color-mix(in srgb,var(--gold) 26%,var(--card))}
 .ans .rl li .rk{color:var(--ink)}
 .guess-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
@@ -281,7 +282,7 @@ function onAct(a) {
           if (g === s.round.selector) return;
           const r = scoreGuess(s.guesses[g], ans); results[g] = r;
           const sc = s.scores[g] = s.scores[g] || { exact: 0, agree: 0, rounds: 0 };
-          sc.exact += r.exact; sc.agree += r.agree; sc.rounds++;
+          sc.exact += r.exact; sc.agree += r.agree; sc.rounds++; sc.tau = (sc.tau || 0) + r.tau;
         });
         s.round.results = results; s.round.answer = ans; s.round.guesses = s.guesses;
         s.history.push({ selector: s.round.selector, items: s.round.items, answer: ans, results });
@@ -364,7 +365,7 @@ function rulesCard(closed) {
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px" class="small">
     <p><b>Spot on:</b> 1 point for each item you put in exactly the same place as the ranker.</p>
     <p><b>In sync:</b> 1 point for each pair of items you put in the same order as the ranker. With 5 items there are 10 pairs. This is a rank correlation (Kendall's tau): 10 of 10 means identical order, 0 of 10 means exactly reversed, about 5 is a coin flip.</p>
-    <p>Your total is both added together.</p></div></details></section>`;
+    <p>Your total is both added together. The scoreboard keeps each one separately, plus your average tau across turns.</p></div></details></section>`;
 }
 function shareCard() {
   return `<section class="card"><div class="share"><div style="min-width:0;display:flex;flex-direction:column;gap:8px">
@@ -404,7 +405,7 @@ function submitView() {
 }
 function rankList(order, items, answer) {
   const byId = Object.fromEntries(items.map(i => [i.id, i.text]));
-  return `<ol class="rl">${order.map((id, i) => `<li class="${answer && answer[i] === id ? "hit" : ""}"><span class="rk">${i + 1}</span><span class="t">${esc(byId[id])}</span>${answer && answer[i] === id ? `<span class="mark">✓</span>` : "<span></span>"}</li>`).join("")}</ol>`;
+  return `<ol class="rl">${order.map((id, i) => `<li class="${answer && answer[i] === id ? "hit" : ""}"><span class="rk">${i + 1}</span><span class="t">${esc(byId[id])}</span>${answer ? (answer[i] === id ? `<span class="mark">✓ +1</span>` : `<span class="miss">they said #${answer.indexOf(id) + 1}</span>`) : "<span></span>"}</li>`).join("")}</ol>`;
 }
 function rankView() {
   const r = state.round, k = turnKey(state), selId = r.selector, amSel = selId === me.id;
@@ -441,7 +442,7 @@ function revealView() {
   out += `<section class="card"><h2>The guesses</h2><div class="reveal-grid">` + (guessers.length ? guessers.map(g => {
     const x = res[g];
     return `<div style="display:flex;flex-direction:column;gap:6px"><div class="guess-h"><h3>${esc(name(g))}${g === me.id ? " (you)" : ""}</h3><span class="pts">+${x.exact + x.agree}</span></div>
-      <p class="stats">${x.exact} spot on · ${x.agree} of ${x.total} pairs in sync (tau ${x.tau >= 0 ? "+" : ""}${x.tau.toFixed(2)})</p>${rankList(r.guesses[g], r.items, r.answer)}</div>`;
+      <p class="stats"><b>Spot on:</b> ${x.exact} of ${x.total ? r.items.length : 0} items · <b>In sync:</b> ${x.agree} of ${x.total} pairs (tau ${x.tau >= 0 ? "+" : ""}${x.tau.toFixed(2)})</p>${rankList(r.guesses[g], r.items, r.answer)}</div>`;
   }).join("") : `<p class="muted">Nobody guessed this round.</p>`) + `</div>
     <button class="primary full" data-act="advance">${state.turn + 1 >= state.order.length ? "See final scores" : "Next turn"}</button></section>`;
   return out + scoreCard();
@@ -452,8 +453,8 @@ function scoreRows() {
 }
 function scoreCard(title) {
   const rows = scoreRows();
-  return `<section class="card"><h2>${title || "Scoreboard"}</h2><div style="overflow-x:auto"><table class="sb"><thead><tr><th>Player</th><th>Spot on</th><th>In sync</th><th>Total</th></tr></thead><tbody>` +
-    rows.map((r, i) => `<tr class="${r.p.id === me.id ? "me" : ""}"><td>${i === 0 && r.tot > 0 ? "🏆 " : ""}${esc(r.p.name)}</td><td>${r.exact}</td><td>${r.agree}</td><td class="tot">${r.tot}</td></tr>`).join("") +
+  return `<section class="card"><h2>${title || "Scoreboard"}</h2><div style="overflow-x:auto"><table class="sb"><thead><tr><th>Player</th><th>Spot on</th><th>In sync</th><th>Avg tau</th><th>Total</th></tr></thead><tbody>` +
+    rows.map((r, i) => `<tr class="${r.p.id === me.id ? "me" : ""}"><td>${i === 0 && r.tot > 0 ? "🏆 " : ""}${esc(r.p.name)}</td><td>${r.exact}</td><td>${r.agree}</td><td>${r.rounds ? ((r.tau || 0) / r.rounds >= 0 ? "+" : "") + ((r.tau || 0) / r.rounds).toFixed(2) : "–"}</td><td class="tot">${r.tot}</td></tr>`).join("") +
     `</tbody></table></div></section>`;
 }
 function finalView() {
