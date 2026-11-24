@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Read My Ranks</title>
+<meta name="description" content="A party game: guess how your friend ranks five things.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<style>
+/* Layout: one narrow column of "cards" like a stack of index cards on a game table; rank numbers are the visual hero. */
+:root{
+  --paper:#f1eefb; --card:#ffffff; --ink:#1d1838; --muted:#6b6590; --line:#dcd6f2;
+  --accent:#ff4f6d; --accent-ink:#ffffff; --gold:#ffb627; --ok:#13a36b; --soft:#ece7ff;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --body:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --paper:#141127; --card:#1e1a38; --ink:#f1eefb; --muted:#a49ecb; --line:#332d58;
+  --accent:#ff6b85; --accent-ink:#1b0f16; --gold:#ffc24d; --ok:#3fd394; --soft:#29234b; color-scheme:dark;}}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--paper);color:var(--ink);font:16px/1.45 var(--body);-webkit-font-smoothing:antialiased;
+  padding:env(safe-area-inset-top,0) max(16px,env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+[hidden]{display:none!important}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px;padding-top:14px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.logo{font:800 18px/1 var(--display);letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.logo .stack{display:inline-grid;gap:2px}
+.logo .stack i{display:block;height:4px;border-radius:2px;background:var(--accent)}
+.logo .stack i:nth-child(1){width:18px}.logo .stack i:nth-child(2){width:13px;opacity:.7}.logo .stack i:nth-child(3){width:8px;opacity:.45}
+.conn{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.dot.on{background:var(--ok)}.dot.off{background:var(--accent)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:30px;line-height:1.05;font-weight:800}
+h2{font-size:20px;line-height:1.15;font-weight:700}
+h3{font-size:14px;font-weight:700}
+.eyebrow{font:700 11px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+p{margin:0}.muted{color:var(--muted)}.small{font-size:13px}
+label{font-weight:700;font-size:14px}
+input[type=text],input[type=number]{width:100%;font:inherit;font-size:17px;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;outline:none}
+input:focus{border-color:var(--accent)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row>*{min-width:0}
+.grow{flex:1 1 160px}
+button{font:inherit;font-weight:700;cursor:pointer;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:12px 16px;min-height:46px}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.primary:disabled{opacity:.45;cursor:not-allowed}
+button.ghost{background:transparent}
+button.link{border:0;background:none;padding:4px 2px;min-height:0;color:var(--muted);text-decoration:underline;font-weight:500}
+button.full{width:100%}
+.code{font:800 34px/1 var(--display);letter-spacing:.14em}
+.share{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center}
+.qr{width:112px;height:112px;background:#fff;border-radius:10px;padding:6px}
+.qr svg,.qr img{width:100%;height:100%;display:block}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--soft);font-weight:500;font-size:14px}
+.chip.done{background:color-mix(in srgb,var(--ok) 18%,var(--card));}
+.chip.wait{opacity:.75}
+.chip .x{border:0;background:none;padding:0 2px;min-height:0;color:var(--muted);font-size:16px;line-height:1}
+.items{display:flex;flex-direction:column;gap:8px}
+.item-in{display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:center}
+.n{font:800 15px/1 var(--display);color:var(--muted);text-align:center}
+.pick{display:flex;flex-direction:column;gap:8px}
+.slot{display:grid;grid-template-columns:46px 1fr auto;align-items:center;gap:10px;border-radius:14px;border:1.5px dashed var(--line);padding:8px 10px;min-height:54px;text-align:left;width:100%;background:transparent;font-weight:500}
+.slot.filled{border-style:solid;background:var(--soft)}
+.slot .rk{font:800 22px/1 var(--display);color:var(--accent);text-align:center}
+.slot .t{overflow-wrap:anywhere}
+.slot .act{font-size:12px;color:var(--muted)}
+.pool{display:flex;flex-wrap:wrap;gap:8px}
+.pool button{font-weight:500;text-align:left;border-radius:12px;background:var(--card);overflow-wrap:anywhere;max-width:100%}
+.pool button:active{transform:scale(.98)}
+.drawn{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.drawn li{padding:10px 12px;background:var(--soft);border-radius:12px;font-weight:500;overflow-wrap:anywhere}
+.reveal-grid{display:flex;flex-direction:column;gap:10px}
+.rl{display:flex;flex-direction:column;gap:4px;margin:0;padding:0;list-style:none}
+.rl li{display:grid;grid-template-columns:30px 1fr auto;gap:8px;align-items:center;padding:6px 8px;border-radius:10px;background:var(--soft);font-size:15px}
+.rl li .t{overflow-wrap:anywhere;min-width:0}
+.rl li.hit{background:color-mix(in srgb,var(--ok) 22%,var(--card))}
+.rl li .rk{font:800 15px/1 var(--display);color:var(--accent);text-align:center}
+.mark{font-size:13px;font-weight:700;color:var(--ok)}
+.ans .rl li{background:color-mix(in srgb,var(--gold) 26%,var(--card))}
+.ans .rl li .rk{color:var(--ink)}
+.guess-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.pts{font:800 18px/1 var(--display)}
+.stats{font-size:13px;color:var(--muted)}
+table.sb{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+table.sb th{font:700 11px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:right;padding:6px 4px;border-bottom:1px solid var(--line)}
+table.sb th:first-child,table.sb td:first-child{text-align:left}
+table.sb td{padding:9px 4px;text-align:right;border-bottom:1px solid var(--line)}
+table.sb td.tot{font:800 16px/1 var(--display)}
+table.sb tr.me td{font-weight:700}
+.banner{padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--gold) 28%,var(--card));font-size:14px}
+.err{background:color-mix(in srgb,var(--accent) 22%,var(--card))}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:700;z-index:5;max-width:calc(100% - 32px)}
+.hero-ranks{display:flex;gap:6px;align-items:flex-end}
+.hero-ranks span{display:grid;place-items:center;font:800 18px/1 var(--display);color:var(--accent-ink);background:var(--accent);border-radius:10px;width:40px}
+.foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+details summary{cursor:pointer;font-weight:700}
+@media (prefers-reduced-motion:no-preference){.slot.filled{animation:pop .18s ease-out}@keyframes pop{from{transform:scale(.97)}to{transform:none}}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="logo"><span class="stack"><i></i><i></i><i></i></span>Read My Ranks</div>
+    <div class="conn" id="conn" hidden><span class="dot" id="dot"></span><span id="connText">Connecting</span></div>
+  </header>
+  <main id="app" class="wrap" style="padding-top:0"></main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script src="https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"></script>
+<script>
+(() => {
+"use strict";
+// ---------- config ----------
+const qs = new URLSearchParams(location.search);
+const BROKER = qs.get("broker") || "wss://broker.emqx.io:8084/mqtt";
+const NS = "readmyranks/v1/";
+const ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+// ---------- helpers ----------
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const rid = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => ALPHA[b % ALPHA.length]).join("");
+const clone = o => JSON.parse(JSON.stringify(o));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+let toastT;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2200); }
+
+// Scoring: exact spots, and Kendall-style pair agreement.
+function scoreGuess(guess, answer) {
+  const n = answer.length; let exact = 0, agree = 0, total = 0;
+  const pg = {}, pa = {};
+  guess.forEach((id, i) => pg[id] = i); answer.forEach((id, i) => pa[id] = i);
+  for (let i = 0; i < n; i++) if (guess[i] === answer[i]) exact++;
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+    const a = answer[i], b = answer[j]; total++;
+    if ((pg[a] < pg[b]) === (pa[a] < pa[b])) agree++;
+  }
+  const tau = total ? (2 * agree - total) / total : 0;
+  return { exact, agree, total, tau };
+}
+window.__scoreGuess = scoreGuess;
+
+// ---------- identity / local ----------
+const prof = store.get("rmr:profile", {});
+if (!prof.id) { prof.id = rid(10); store.set("rmr:profile", prof); }
+const me = prof; // {id, name}
+let room = (location.hash.replace("#", "").toUpperCase().match(/^[A-Z0-9]{4,10}$/) || [null])[0];
+let local = room ? store.get("rmr:room:" + room, {}) : {};
+const saveLocal = () => room && store.set("rmr:room:" + room, local);
+
+// ---------- network ----------
+let client = null, connected = false, state = null, gotState = false, waitTimer = null;
+const T = () => ({ state: NS + room + "/state", act: NS + room + "/act" });
+
+function setConn(on, text) {
+  $("#conn").hidden = !room; $("#dot").className = "dot " + (on ? "on" : "off"); $("#connText").textContent = text;
+}
+function connect() {
+  if (!window.mqtt) { setConn(false, "Offline"); render(); return; }
+  setConn(false, "Connecting");
+  client = mqtt.connect(BROKER, { clientId: "rmr_" + me.id + "_" + rid(4), clean: true, reconnectPeriod: 2000, connectTimeout: 10000, keepalive: 30 });
+  client.on("connect", () => {
+    connected = true; setConn(true, "Live");
+    client.subscribe([T().state, T().act], { qos: 1 }, () => { syncMine(); if (isHost() && state) publishState(); });
+    clearTimeout(waitTimer);
+    waitTimer = setTimeout(() => { if (!gotState) { gotState = true; if (local.creating) { state = newState(); publishState(); } render(); } }, 5000);
+  });
+  client.on("reconnect", () => setConn(false, "Reconnecting"));
+  client.on("offline", () => { connected = false; setConn(false, "Offline, retrying"); });
+  client.on("close", () => { connected = false; setConn(false, "Reconnecting"); });
+  client.on("message", (topic, payload) => {
+    let msg; try { msg = JSON.parse(payload.toString()); } catch { return; }
+    if (topic === T().state) onState(msg); else if (topic === T().act) onAct(msg);
+  });
+}
+function publish(topic, obj, retain) { if (client) client.publish(topic, JSON.stringify(obj), { qos: 1, retain: !!retain }); }
+function send(action) { action.from = me.id; if (isHost()) onAct(action); else publish(T().act, action); }
+
+function onState(s) {
+  if (!s || typeof s !== "object" || !Array.isArray(s.players)) return;
+  gotState = true; local.creating = false; saveLocal();
+  if (state && s.v < state.v) { if (isHost()) publishState(); return; }
+  if (state && s.v === state.v && s.hostId !== state.hostId && state.hostId === me.id && s.hostId > me.id) { publishState(); return; }
+  state = s; render(); syncMine();
+}
+
+// ---------- host engine ----------
+const isHost = () => state && state.hostId === me.id;
+function newState() {
+  return { v: 1, game: 1, hostId: me.id, n: 5, phase: "lobby", players: [{ id: me.id, name: me.name || "Host" }],
+    items: {}, pool: [], order: [], turn: 0, round: null, guesses: {}, scores: {}, history: [] };
+}
+function publishState() { if (!state) return; publish(T().state, state, true); }
+function commit(s) { s.v = (state ? state.v : 0) + 1; state = s; publishState(); render(); syncMine(); }
+
+function drawRound(s) {
+  const sel = s.order[s.turn];
+  const avail = s.pool.filter(it => !it.used);
+  const notMine = shuffle(avail.filter(it => it.by !== sel)), mine = shuffle(avail.filter(it => it.by === sel));
+  const picked = notMine.concat(mine).slice(0, s.n);
+  picked.forEach(it => it.used = true);
+  s.round = { selector: sel, items: shuffle(picked).map(it => ({ id: it.id, text: it.text })) };
+  s.guesses = {};
+  s.phase = "rank";
+}
+function nextTurnOrEnd(s) {
+  while (s.turn < s.order.length && !s.players.some(p => p.id === s.order[s.turn])) s.turn++;
+  const left = s.pool.filter(it => !it.used).length;
+  if (s.turn >= s.order.length || left < 2) { s.phase = "final"; s.round = null; return; }
+  if (left < s.n) s.n = left;
+  drawRound(s);
+}
+function addToPool(s, pid, items) {
+  items.forEach((text, i) => s.pool.push({ id: pid + "_" + s.game + "_" + i + "_" + rid(3), text, by: pid, used: false }));
+}
+function onAct(a) {
+  if (!isHost() || !a || typeof a !== "object") return;
+  const s = clone(state); const pid = String(a.from || "");
+  const player = s.players.find(p => p.id === pid);
+  switch (a.type) {
+    case "join": {
+      const name = String(a.name || "").trim().slice(0, 24) || "Player";
+      if (player) { if (player.name === name) return; player.name = name; }
+      else {
+        s.players.push({ id: pid, name });
+        if (s.phase !== "lobby" && s.phase !== "submit" && s.phase !== "final") s.order.push(pid);
+      }
+      break;
+    }
+    case "items": {
+      if (!player) return;
+      const items = (Array.isArray(a.items) ? a.items : []).map(x => String(x).trim().slice(0, 80)).filter(Boolean).slice(0, s.n);
+      if (items.length < s.n) return;
+      if (JSON.stringify(s.items[pid]) === JSON.stringify(items)) return;
+      const already = !!s.items[pid];
+      s.items[pid] = items;
+      if (s.phase !== "lobby" && s.phase !== "submit" && !already) addToPool(s, pid, items);
+      break;
+    }
+    case "rank": {
+      if (s.phase !== "rank" || !player || a.key !== turnKey(s)) return;
+      const ids = s.round.items.map(i => i.id);
+      const ord = Array.isArray(a.order) ? a.order.map(String) : [];
+      if (ord.length !== ids.length || ids.some(id => !ord.includes(id))) return;
+      if (JSON.stringify(s.guesses[pid]) === JSON.stringify(ord)) return;
+      s.guesses[pid] = ord; break;
+    }
+    case "settings": { if (s.phase !== "lobby" || pid !== s.hostId) return; s.n = Math.max(3, Math.min(7, a.n | 0)); break; }
+    case "kick": { if (pid !== s.hostId || a.id === s.hostId) return; s.players = s.players.filter(p => p.id !== a.id); delete s.guesses[a.id]; break; }
+    case "advance": {
+      if (a.from_phase !== s.phase || (a.key && a.key !== turnKey(s))) return;
+      if (s.phase === "lobby") { s.phase = "submit"; }
+      else if (s.phase === "submit") {
+        const ready = s.players.filter(p => s.items[p.id]);
+        if (ready.length < 2) return;
+        s.pool = []; ready.forEach(p => addToPool(s, p.id, s.items[p.id]));
+        s.order = shuffle(ready.map(p => p.id)); s.turn = 0;
+        s.players.forEach(p => s.scores[p.id] = s.scores[p.id] || { exact: 0, agree: 0, rounds: 0 });
+        nextTurnOrEnd(s);
+      } else if (s.phase === "rank") {
+        const ans = s.guesses[s.round.selector]; if (!ans) return;
+        const results = {};
+        Object.keys(s.guesses).forEach(g => {
+          if (g === s.round.selector) return;
+          const r = scoreGuess(s.guesses[g], ans); results[g] = r;
+          const sc = s.scores[g] = s.scores[g] || { exact: 0, agree: 0, rounds: 0 };
+          sc.exact += r.exact; sc.agree += r.agree; sc.rounds++;
+        });
+        s.round.results = results; s.round.answer = ans; s.round.guesses = s.guesses;
+        s.history.push({ selector: s.round.selector, items: s.round.items, answer: ans, results });
+        if (s.history.length > 12) s.history.shift();
+        s.phase = "reveal";
+      } else if (s.phase === "reveal") { s.turn++; nextTurnOrEnd(s); }
+      else if (s.phase === "final") {
+        Object.assign(s, { game: s.game + 1, phase: "lobby", items: {}, pool: [], order: [], turn: 0, round: null, guesses: {}, scores: {}, history: [] });
+      }
+      break;
+    }
+    default: return;
+  }
+  commit(s);
+}
+const turnKey = s => s.game + "-" + s.turn;
+
+// ---------- keep my contributions in sync (resend until reflected) ----------
+function syncMine() {
+  if (!state || !connected) return;
+  const inRoom = state.players.some(p => p.id === me.id);
+  if (me.name && (!inRoom || state.players.find(p => p.id === me.id).name !== me.name)) {
+    // Do not auto rejoin if kicked mid-session: only if we have never been seen or name changed
+    if (!inRoom && local.kicked) return;
+    send({ type: "join", name: me.name });
+  }
+  if (!inRoom) return;
+  const ig = local.itemsGame === state.game ? local.items : null;
+  if (local.itemsSubmitted === state.game && ig && JSON.stringify(state.items[me.id]) !== JSON.stringify(ig)) send({ type: "items", items: ig });
+  if (state.phase === "rank") {
+    const k = turnKey(state), mine = local.ranks && local.ranks[k];
+    if (mine && local.locked === k && JSON.stringify(state.guesses[me.id]) !== JSON.stringify(mine)) send({ type: "rank", key: k, order: mine });
+  }
+}
+setInterval(syncMine, 4000);
+
+// ---------- views ----------
+const name = id => { const p = state && state.players.find(p => p.id === id); return p ? p.name : "Someone"; };
+const roomLink = () => location.origin + location.pathname + location.search + "#" + room;
+function render() {
+  const app = $("#app");
+  const f = document.activeElement; const fid = f && f.id; const sel = f && f.selectionStart != null ? [f.selectionStart, f.selectionEnd] : null;
+  app.innerHTML = view();
+  if (fid) { const el = document.getElementById(fid); if (el) { el.focus(); if (sel && el.setSelectionRange) try { el.setSelectionRange(sel[0], sel[1]); } catch {} } }
+  wire();
+}
+function view() {
+  if (!room) return homeView();
+  if (!me.name) return nameView();
+  if (!gotState) return `<section class="card"><h2>Finding room ${esc(room)}</h2><p class="muted">Connecting to the game. This takes a second or two.</p></section>`;
+  if (!state) return `<section class="card"><h2>Room ${esc(room)} not found</h2><p class="muted">Check the code, or start a new game.</p><button class="primary" data-act="home">Back to start</button></section>`;
+  const inRoom = state.players.some(p => p.id === me.id);
+  if (!inRoom) return `<section class="card"><h2>Joining ${esc(room)}…</h2><p class="muted">Waiting for the host's phone to let you in. If this hangs, the host may have closed the game.</p>${local.kicked ? `<button data-act="rejoin">Ask to rejoin</button>` : ""}</section>`;
+  const body = { lobby: lobbyView, submit: submitView, rank: rankView, reveal: revealView, final: finalView }[state.phase]();
+  return body + footView();
+}
+function homeView() {
+  return `<section class="card" style="gap:16px">
+    <div class="hero-ranks" aria-hidden="true"><span style="height:56px">1</span><span style="height:44px">2</span><span style="height:34px">3</span><span style="height:26px">4</span><span style="height:20px">5</span></div>
+    <h1>How well do you know their ranks?</h1>
+    <p class="muted">Everyone adds five things. Each turn, one player ranks five of them and everyone else guesses the order. Play on your own phones from one link.</p>
+    <div><label for="nm">Your name</label></div>
+    <input type="text" id="nm" maxlength="24" autocomplete="nickname" placeholder="e.g. Sam" value="${esc(me.name || "")}">
+    <button class="primary full" data-act="create">Start a new game</button>
+  </section>
+  <section class="card">
+    <h3>Have a code?</h3>
+    <div class="row"><input class="grow" type="text" id="joincode" maxlength="10" placeholder="Room code" style="text-transform:uppercase"><button data-act="joincode">Join</button></div>
+  </section>
+  ${rulesCard(true)}`;
+}
+function nameView() {
+  return `<section class="card"><p class="eyebrow">Room ${esc(room)}</p><h2>What should we call you?</h2>
+    <input type="text" id="nm" maxlength="24" autocomplete="nickname" placeholder="Your name">
+    <button class="primary full" data-act="setname">Join game</button></section>${rulesCard(true)}`;
+}
+function rulesCard(closed) {
+  return `<section class="card"><details ${closed ? "" : "open"}><summary>How scoring works</summary>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px" class="small">
+    <p><b>Spot on:</b> 1 point for each item you put in exactly the same place as the ranker.</p>
+    <p><b>In sync:</b> 1 point for each pair of items you put in the same order as the ranker. With 5 items there are 10 pairs. This is a rank correlation (Kendall's tau): 10 of 10 means identical order, 0 of 10 means exactly reversed, about 5 is a coin flip.</p>
+    <p>Your total is both added together.</p></div></details></section>`;
+}
+function shareCard() {
+  return `<section class="card"><div class="share"><div style="min-width:0;display:flex;flex-direction:column;gap:8px">
+    <p class="eyebrow">Room code</p><div class="code">${esc(room)}</div>
+    <div class="row"><button data-act="copylink">Copy invite link</button></div></div>
+    <div class="qr" id="qr" aria-label="QR code for the invite link"></div></div></section>`;
+}
+function playerChips(doneFn, kick) {
+  return `<div class="chips">${state.players.map(p => {
+    const d = doneFn ? doneFn(p) : null;
+    return `<span class="chip ${d === true ? "done" : d === false ? "wait" : ""}">${p.id === state.hostId ? "★ " : ""}${esc(p.name)}${p.id === me.id ? " (you)" : ""}${d === true ? " ✓" : ""}${kick && isHost() && p.id !== me.id ? ` <button class="x" data-kick="${esc(p.id)}" aria-label="Remove ${esc(p.name)}">×</button>` : ""}</span>`;
+  }).join("")}</div>`;
+}
+function lobbyView() {
+  return shareCard() + `<section class="card"><h2>Who's playing</h2>${playerChips(null, true)}
+    ${isHost() ? `<div class="row"><label for="nset" class="grow">Things per person and per round</label><input type="number" id="nset" min="3" max="7" value="${state.n}" style="width:84px"></div>
+      <button class="primary full" data-act="advance" ${state.players.length < 2 ? "disabled" : ""}>Everyone's here, add things</button>
+      ${state.players.length < 2 ? `<p class="small muted">You need at least 2 players. Share the link above.</p>` : ""}`
+    : `<p class="muted">Waiting for ${esc(name(state.hostId))} to start. Each person will add ${state.n} things.</p>`}</section>`;
+}
+function submitView() {
+  const n = state.n; const done = state.items[me.id] && local.itemsSubmitted === state.game;
+  if (local.itemsGame !== state.game) { local.itemsGame = state.game; local.items = Array(n).fill(""); local.itemsSubmitted = 0; saveLocal(); }
+  const drafts = (local.items || []).concat(Array(n).fill("")).slice(0, n);
+  const ready = state.players.filter(p => state.items[p.id]).length;
+  let out = `<section class="card"><p class="eyebrow">Step 1</p><h2>${done ? "Your things are in" : `Add ${n} things`}</h2>`;
+  if (!done) {
+    out += `<p class="muted small">Anything rankable: foods, movies, chores, people you know, places. Others will see them, but not who wrote them.</p><div class="items">` +
+      drafts.map((v, i) => `<div class="item-in"><span class="n">${i + 1}</span><input type="text" id="it${i}" data-item="${i}" maxlength="80" value="${esc(v)}" placeholder="Thing ${i + 1}" enterkeyhint="${i < n - 1 ? "next" : "done"}"></div>`).join("") +
+      `</div><button class="primary full" data-act="submititems" ${drafts.every(d => d.trim()) ? "" : "disabled"}>Submit my ${n}</button>`;
+  } else {
+    out += `<ol class="drawn">${state.items[me.id].map(t => `<li>${esc(t)}</li>`).join("")}</ol><button class="link" data-act="edititems">Edit mine</button>`;
+  }
+  out += `</section><section class="card"><h3>${ready} of ${state.players.length} ready</h3>${playerChips(p => !!state.items[p.id], true)}
+    ${isHost() ? `<button class="primary full" data-act="advance" ${ready < 2 ? "disabled" : ""}>${ready < state.players.length ? `Start with the ${ready} who are ready` : "Start the game"}</button>` : `<p class="small muted">${esc(name(state.hostId))} starts the game once everyone's in.</p>`}</section>`;
+  return out;
+}
+function rankList(order, items, answer) {
+  const byId = Object.fromEntries(items.map(i => [i.id, i.text]));
+  return `<ol class="rl">${order.map((id, i) => `<li class="${answer && answer[i] === id ? "hit" : ""}"><span class="rk">${i + 1}</span><span class="t">${esc(byId[id])}</span>${answer && answer[i] === id ? `<span class="mark">✓</span>` : "<span></span>"}</li>`).join("")}</ol>`;
+}
+function rankView() {
+  const r = state.round, k = turnKey(state), selId = r.selector, amSel = selId === me.id;
+  local.ranks = local.ranks || {};
+  const mine = local.ranks[k] || [];
+  const locked = local.locked === k && state.guesses[me.id];
+  const total = state.players.length, inCount = state.players.filter(p => state.guesses[p.id]).length;
+  const turnNo = state.turn + 1, of = state.order.length;
+  let out = `<section class="card"><p class="eyebrow">Turn ${turnNo} of ${of}</p>
+    <h2>${amSel ? "You're the ranker. Read these out loud." : `${esc(name(selId))} is ranking`}</h2>
+    ${amSel ? `<p class="muted small">Then rank them your way. Everyone else is guessing your order.</p>` : `<p class="muted small">Rank these the way you think ${esc(name(selId))} will, #1 at the top.</p>`}`;
+  if (locked) {
+    out += `<p class="banner">Locked in. You can change it until the reveal.</p>${rankList(state.guesses[me.id], r.items)}<button class="link" data-act="unlock">Change my ranking</button>`;
+  } else {
+    const left = r.items.filter(i => !mine.includes(i.id));
+    out += `<p class="small muted">Tap things in order, ${amSel ? "your #1" : "their #1"} first. Tap a ranked one to take it back.</p><div class="pick">` +
+      r.items.map((_, i) => { const id = mine[i]; const it = id && r.items.find(x => x.id === id);
+        return it ? `<button class="slot filled" data-unpick="${esc(id)}"><span class="rk">${i + 1}</span><span class="t">${esc(it.text)}</span><span class="act">undo</span></button>`
+                  : `<div class="slot"><span class="rk" style="opacity:.35">${i + 1}</span><span class="t muted small">${i === mine.length ? "Tap a thing below" : ""}</span><span></span></div>`; }).join("") +
+      `</div>${left.length ? `<div class="pool">${left.map(i => `<button data-pick="${esc(i.id)}">${esc(i.text)}</button>`).join("")}</div>` : ""}
+      <button class="primary full" data-act="lock" ${mine.length === r.items.length ? "" : "disabled"}>${amSel ? "Lock in my real ranking" : "Lock in my guess"}</button>`;
+  }
+  out += `</section><section class="card"><h3>${inCount} of ${total} locked in</h3>${playerChips(p => !!state.guesses[p.id], false)}`;
+  const selIn = !!state.guesses[selId];
+  if (inCount === total) out += `<button class="primary full" data-act="advance">Reveal the ranking</button>`;
+  else if (selIn && (isHost() || amSel)) out += `<button class="ghost full" data-act="advance">Reveal now (skip anyone still deciding)</button>`;
+  else if (!selIn) out += `<p class="small muted">Waiting on ${amSel ? "you" : esc(name(selId))} for the real ranking.</p>`;
+  return out + `</section>`;
+}
+function revealView() {
+  const r = state.round, res = r.results || {};
+  const guessers = Object.keys(res).sort((a, b) => (res[b].exact + res[b].agree) - (res[a].exact + res[a].agree));
+  let out = `<section class="card ans"><p class="eyebrow">Turn ${state.turn + 1} of ${state.order.length} · the answer</p><h2>${esc(name(r.selector))}'s real ranking</h2>${rankList(r.answer, r.items)}</section>`;
+  out += `<section class="card"><h2>The guesses</h2><div class="reveal-grid">` + (guessers.length ? guessers.map(g => {
+    const x = res[g];
+    return `<div style="display:flex;flex-direction:column;gap:6px"><div class="guess-h"><h3>${esc(name(g))}${g === me.id ? " (you)" : ""}</h3><span class="pts">+${x.exact + x.agree}</span></div>
+      <p class="stats">${x.exact} spot on · ${x.agree} of ${x.total} pairs in sync (tau ${x.tau >= 0 ? "+" : ""}${x.tau.toFixed(2)})</p>${rankList(r.guesses[g], r.items, r.answer)}</div>`;
+  }).join("") : `<p class="muted">Nobody guessed this round.</p>`) + `</div>
+    <button class="primary full" data-act="advance">${state.turn + 1 >= state.order.length ? "See final scores" : "Next turn"}</button></section>`;
+  return out + scoreCard();
+}
+function scoreRows() {
+  return state.players.map(p => { const s = state.scores[p.id] || { exact: 0, agree: 0, rounds: 0 }; return { p, ...s, tot: s.exact + s.agree }; })
+    .sort((a, b) => b.tot - a.tot || b.exact - a.exact);
+}
+function scoreCard(title) {
+  const rows = scoreRows();
+  return `<section class="card"><h2>${title || "Scoreboard"}</h2><div style="overflow-x:auto"><table class="sb"><thead><tr><th>Player</th><th>Spot on</th><th>In sync</th><th>Total</th></tr></thead><tbody>` +
+    rows.map((r, i) => `<tr class="${r.p.id === me.id ? "me" : ""}"><td>${i === 0 && r.tot > 0 ? "🏆 " : ""}${esc(r.p.name)}</td><td>${r.exact}</td><td>${r.agree}</td><td class="tot">${r.tot}</td></tr>`).join("") +
+    `</tbody></table></div></section>`;
+}
+function finalView() {
+  const rows = scoreRows(); const w = rows[0];
+  // most predictable ranker: highest average guess total when they were ranking
+  const pred = {};
+  state.history.forEach(h => { const v = Object.values(h.results); if (!v.length) return; const avg = v.reduce((s, x) => s + x.agree / x.total, 0) / v.length; pred[h.selector] = avg; });
+  const pk = Object.keys(pred).sort((a, b) => pred[b] - pred[a])[0];
+  return `<section class="card"><p class="eyebrow">Game over</p><h1>${w && w.tot > 0 ? `${esc(w.p.name)} reads minds best` : "That's a wrap"}</h1>
+    ${pk ? `<p class="muted">Easiest to read: <b>${esc(name(pk))}</b>, guessers matched ${Math.round(pred[pk] * 100)}% of their pairs.</p>` : ""}</section>` +
+    scoreCard("Final scores") +
+    `<section class="card">${isHost() ? `<button class="primary full" data-act="advance">Play again with the same people</button>` : `<p class="muted">${esc(name(state.hostId))} can start another game.</p>`}</section>`;
+}
+function footView() {
+  return `${state.phase !== "lobby" && state.phase !== "reveal" && state.phase !== "final" && state.phase !== "submit" ? scoreCard() : ""}
+  <div class="foot"><span>Room ${esc(room)} · you are ${esc(me.name)}</span><span>
+  <button class="link" data-act="copylink">Invite link</button>
+  ${!isHost() ? `<button class="link" data-act="takehost">Host left? Take over</button>` : ""}
+  <button class="link" data-act="leave">Leave</button></span></div>`;
+}
+
+// ---------- interactions ----------
+function drawQR() {
+  const el = $("#qr"); if (!el) return;
+  if (!window.qrcode) { el.hidden = true; return; }
+  try { const q = qrcode(0, "M"); q.addData(roomLink()); q.make(); el.innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); } catch { el.hidden = true; }
+}
+function wire() {
+  drawQR();
+  document.querySelectorAll("[data-item]").forEach(inp => {
+    inp.addEventListener("input", () => {
+      local.items[+inp.dataset.item] = inp.value; saveLocal();
+      const b = document.querySelector('[data-act="submititems"]'); if (b) b.disabled = !local.items.slice(0, state.n).every(d => d && d.trim());
+    });
+    inp.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); const nx = document.getElementById("it" + (+inp.dataset.item + 1)); if (nx) nx.focus(); else document.querySelector('[data-act="submititems"]')?.click(); } });
+  });
+  const nm = $("#nm"); if (nm) nm.addEventListener("keydown", e => { if (e.key === "Enter") (document.querySelector('[data-act="create"]') || document.querySelector('[data-act="setname"]'))?.click(); });
+  const jc = $("#joincode"); if (jc) jc.addEventListener("keydown", e => { if (e.key === "Enter") document.querySelector('[data-act="joincode"]').click(); });
+  const ns = $("#nset"); if (ns) ns.addEventListener("change", () => send({ type: "settings", n: +ns.value }));
+}
+document.addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.kick) { send({ type: "kick", id: b.dataset.kick }); return; }
+  if (b.dataset.pick) { const k = turnKey(state); local.ranks = local.ranks || {}; const m = local.ranks[k] = local.ranks[k] || []; if (!m.includes(b.dataset.pick)) m.push(b.dataset.pick); saveLocal(); render(); return; }
+  if (b.dataset.unpick) { const k = turnKey(state); const m = local.ranks[k] || []; local.ranks[k] = m.filter(x => x !== b.dataset.unpick); saveLocal(); render(); return; }
+  const act = b.dataset.act; if (!act) return;
+  switch (act) {
+    case "create": {
+      const n = $("#nm").value.trim(); if (!n) { $("#nm").focus(); toast("Add your name first"); return; }
+      me.name = n.slice(0, 24); store.set("rmr:profile", me);
+      room = rid(5); local = { creating: true }; saveLocal();
+      history.replaceState(null, "", "#" + room);
+      state = newState(); gotState = true; render(); connect(); publishState(); break;
+    }
+    case "joincode": {
+      const c = ($("#joincode").value || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); if (c.length < 4) { toast("Enter the room code"); return; }
+      const n = $("#nm") && $("#nm").value.trim(); if (n) { me.name = n.slice(0, 24); store.set("rmr:profile", me); }
+      location.hash = c; location.reload(); break;
+    }
+    case "setname": { const n = $("#nm").value.trim(); if (!n) { toast("Add your name"); return; } me.name = n.slice(0, 24); store.set("rmr:profile", me); render(); syncMine(); break; }
+    case "home": location.hash = ""; location.reload(); break;
+    case "copylink": {
+      const link = roomLink();
+      try { if (navigator.share && matchMedia("(pointer:coarse)").matches) { await navigator.share({ title: "Read My Ranks", text: "Join my game, room " + room, url: link }); return; } } catch (err) { if (err && err.name === "AbortError") return; }
+      try { await navigator.clipboard.writeText(link); toast("Link copied"); } catch { prompt("Copy this link", link); }
+      break;
+    }
+    case "advance": send({ type: "advance", from_phase: state.phase, key: state.phase === "rank" || state.phase === "reveal" ? turnKey(state) : undefined }); break;
+    case "submititems": {
+      const items = local.items.slice(0, state.n).map(x => (x || "").trim());
+      if (!items.every(Boolean)) return;
+      local.itemsSubmitted = state.game; saveLocal(); send({ type: "items", items }); render(); break;
+    }
+    case "edititems": local.itemsSubmitted = 0; saveLocal(); render(); break;
+    case "lock": { const k = turnKey(state); local.locked = k; saveLocal(); send({ type: "rank", key: k, order: local.ranks[k] }); render(); break; }
+    case "unlock": local.locked = null; saveLocal(); render(); break;
+    case "takehost": {
+      if (!state) return; const s = clone(state); s.hostId = me.id; commit(s); toast("You're the host now"); break;
+    }
+    case "rejoin": local.kicked = false; saveLocal(); syncMine(); break;
+    case "leave": location.hash = ""; location.reload(); break;
+  }
+});
+// Detect being kicked: we were in the room, now we're not.
+let wasIn = false;
+const _render = render;
+render = function () { if (state) { const inRoom = state.players.some(p => p.id === me.id); if (wasIn && !inRoom) { local.kicked = true; saveLocal(); } wasIn = inRoom; } _render(); };
+window.addEventListener("hashchange", () => location.reload());
+
+render();
+if (room) connect();
+})();
+</script>
+</body>
+</html>
