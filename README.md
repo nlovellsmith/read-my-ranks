@@ -1,4 +1,4 @@
-# Read My Ranks
+# Gideon’s Ranking Game
 
 A party game you play from one link on everyone's phone.
 

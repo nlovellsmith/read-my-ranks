@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Read My Ranks</title>
+<title>Gideon’s Ranking Game</title>
 <meta name="description" content="A party game: guess how your friend ranks five things.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
@@ -109,7 +109,7 @@ details summary{cursor:pointer;font-weight:700}
 <body>
 <div class="wrap">
   <header class="top">
-    <div class="logo"><span class="stack"><i></i><i></i><i></i></span>Read My Ranks</div>
+    <div class="logo"><span class="stack"><i></i><i></i><i></i></span>Gideon’s Ranking Game</div>
     <div class="conn" id="conn" hidden><span class="dot" id="dot"></span><span id="connText">Connecting</span></div>
   </header>
   <main id="app" class="wrap" style="padding-top:0"></main>
@@ -527,7 +527,7 @@ document.addEventListener("click", async e => {
     case "home": location.hash = ""; location.reload(); break;
     case "copylink": {
       const link = roomLink();
-      try { if (navigator.share && matchMedia("(pointer:coarse)").matches) { await navigator.share({ title: "Read My Ranks", text: "Join my game, room " + room, url: link }); return; } } catch (err) { if (err && err.name === "AbortError") return; }
+      try { if (navigator.share && matchMedia("(pointer:coarse)").matches) { await navigator.share({ title: "Gideon’s Ranking Game", text: "Join my game, room " + room, url: link }); return; } } catch (err) { if (err && err.name === "AbortError") return; }
       try { await navigator.clipboard.writeText(link); toast("Link copied"); } catch { prompt("Copy this link", link); }
       break;
     }
