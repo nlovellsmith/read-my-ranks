@@ -121,7 +121,7 @@ details summary{cursor:pointer;font-weight:700}
 "use strict";
 // ---------- config ----------
 const qs = new URLSearchParams(location.search);
-const BROKER = qs.get("broker") || "wss://broker.emqx.io:8084/mqtt";
+const BROKER = qs.get("broker") || "wss://broker.hivemq.com:8884/mqtt";
 const NS = "readmyranks/v1/";
 const ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -174,7 +174,10 @@ function connect() {
   client = mqtt.connect(BROKER, { clientId: "rmr_" + me.id + "_" + rid(4), clean: true, reconnectPeriod: 2000, connectTimeout: 10000, keepalive: 30 });
   client.on("connect", () => {
     connected = true; setConn(true, "Live");
-    client.subscribe([T().state, T().act], { qos: 1 }, () => { syncMine(); if (isHost() && state) publishState(); });
+    client.subscribe([T().state, T().act], { qos: 1 }, () => {
+      syncMine(); if (isHost() && state) publishState();
+      [800, 2500].forEach(ms => setTimeout(() => { if (!state || !gotState) publish(T().act, { type: "sync", from: me.id }); }, ms));
+    });
     clearTimeout(waitTimer);
     waitTimer = setTimeout(() => { if (!gotState) { gotState = true; if (local.creating) { state = newState(); publishState(); } render(); } }, 5000);
   });
@@ -231,6 +234,7 @@ function onAct(a) {
   const s = clone(state); const pid = String(a.from || "");
   const player = s.players.find(p => p.id === pid);
   switch (a.type) {
+    case "sync": publishState(); return;
     case "join": {
       const name = String(a.name || "").trim().slice(0, 24) || "Player";
       if (player) { if (player.name === name) return; player.name = name; }
@@ -313,6 +317,7 @@ function syncMine() {
   }
 }
 setInterval(syncMine, 4000);
+setInterval(() => { if (isHost() && connected) publishState(); }, 15000);
 
 // ---------- views ----------
 const name = id => { const p = state && state.players.find(p => p.id === id); return p ? p.name : "Someone"; };
@@ -328,7 +333,7 @@ function view() {
   if (!room) return homeView();
   if (!me.name) return nameView();
   if (!gotState) return `<section class="card"><h2>Finding room ${esc(room)}</h2><p class="muted">Connecting to the game. This takes a second or two.</p></section>`;
-  if (!state) return `<section class="card"><h2>Room ${esc(room)} not found</h2><p class="muted">Check the code, or start a new game.</p><button class="primary" data-act="home">Back to start</button></section>`;
+  if (!state) return `<section class="card"><h2>Room ${esc(room)} not found</h2><p class="muted">Check the code. If the host's phone is asleep or closed, ask them to open the game, then try again.</p><div class="row"><button class="primary" data-act="retry">Try again</button><button data-act="home">Back to start</button></div></section>`;
   const inRoom = state.players.some(p => p.id === me.id);
   if (!inRoom) return `<section class="card"><h2>Joining ${esc(room)}…</h2><p class="muted">Waiting for the host's phone to let you in. If this hangs, the host may have closed the game.</p>${local.kicked ? `<button data-act="rejoin">Ask to rejoin</button>` : ""}</section>`;
   const body = { lobby: lobbyView, submit: submitView, rank: rankView, reveal: revealView, final: finalView }[state.phase]();
@@ -509,6 +514,7 @@ document.addEventListener("click", async e => {
       location.hash = c; location.reload(); break;
     }
     case "setname": { const n = $("#nm").value.trim(); if (!n) { toast("Add your name"); return; } me.name = n.slice(0, 24); store.set("rmr:profile", me); render(); syncMine(); break; }
+    case "retry": location.reload(); break;
     case "home": location.hash = ""; location.reload(); break;
     case "copylink": {
       const link = roomLink();
