@@ -377,8 +377,8 @@ function rulesCard(closed) {
   return `<section class="card"><details ${closed ? "" : "open"}><summary>How scoring works</summary>
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px" class="small">
     <p><b>Spot on:</b> 1 point for each item you put in exactly the same place as the ranker.</p>
-    <p><b>In sync:</b> 1 point for each pair of items you put in the same order as the ranker. With 5 items there are 10 pairs. This is a rank correlation (Kendall's tau): 10 of 10 means identical order, 0 of 10 means exactly reversed, about 5 is a coin flip.</p>
-    <p>The two scores are never added together. Each has its own leader, and the scoreboard also shows your average tau across turns.</p></div></details></section>`;
+    <p><b>Tau:</b> Kendall's tau, a rank correlation between your order and the ranker's. It compares every pair of items: +1 means identical order, −1 means exactly reversed, and around 0 is no better than chance. The scoreboard shows your average tau across turns.</p>
+    <p>The two scores are never added together. Each has its own leader.</p></div></details></section>`;
 }
 function shareCard() {
   return `<section class="card"><div class="share"><div style="min-width:0;display:flex;flex-direction:column;gap:8px">
@@ -450,41 +450,41 @@ function rankView() {
 }
 function revealView() {
   const r = state.round, res = r.results || {};
-  const guessers = Object.keys(res).sort((a, b) => res[b].exact - res[a].exact || res[b].agree - res[a].agree);
+  const guessers = Object.keys(res).sort((a, b) => res[b].exact - res[a].exact || res[b].tau - res[a].tau);
   let out = `<section class="card ans"><p class="eyebrow">Turn ${state.turn + 1} of ${state.order.length} · the answer</p><h2>${esc(name(r.selector))}'s real ranking</h2>${rankList(r.answer, r.items)}</section>`;
   out += `<section class="card"><h2>The guesses</h2><div class="reveal-grid">` + (guessers.length ? guessers.map(g => {
     const x = res[g];
     return `<div style="display:flex;flex-direction:column;gap:6px"><div class="guess-h"><h3>${esc(name(g))}${g === me.id ? " (you)" : ""}</h3></div>
-      <p class="stats"><b>Spot on:</b> ${x.exact} of ${x.total ? r.items.length : 0} items · <b>In sync:</b> ${x.agree} of ${x.total} pairs (tau ${x.tau >= 0 ? "+" : ""}${x.tau.toFixed(2)})</p>${rankList(r.guesses[g], r.items, r.answer)}</div>`;
+      <p class="stats"><b>Spot on:</b> ${x.exact} of ${x.total ? r.items.length : 0} items · <b>Tau:</b> ${fmtTau(x.tau)}</p>${rankList(r.guesses[g], r.items, r.answer)}</div>`;
   }).join("") : `<p class="muted">Nobody guessed this round.</p>`) + `</div>
     <button class="primary full" data-act="advance">${state.turn + 1 >= state.order.length ? "See final scores" : "Next turn"}</button></section>`;
   return out + scoreCard();
 }
 function scoreRows() {
   return state.players.map(p => { const s = state.scores[p.id] || { exact: 0, agree: 0, rounds: 0 }; return { p, ...s, avg: s.rounds ? (s.tau || 0) / s.rounds : null }; })
-    .sort((a, b) => b.exact - a.exact || b.agree - a.agree);
+    .sort((a, b) => b.exact - a.exact || (b.avg ?? -9) - (a.avg ?? -9));
 }
-function leaders(rows) { return { exact: Math.max(0, ...rows.map(r => r.exact)), agree: Math.max(0, ...rows.map(r => r.agree)) }; }
+const fmtTau = t => (t > 0 ? "+" : t < 0 ? "−" : "") + Math.abs(t).toFixed(2);
+function leaders(rows) { const avgs = rows.filter(r => r.avg != null).map(r => r.avg); return { exact: Math.max(0, ...rows.map(r => r.exact)), tau: avgs.length ? Math.max(...avgs) : null }; }
 function scoreCard(title) {
   const rows = scoreRows(); const lead = leaders(rows);
-  return `<section class="card"><h2>${title || "Scoreboard"}</h2><div style="overflow-x:auto"><table class="sb"><thead><tr><th>Player</th><th>Spot on</th><th>In sync</th><th>Avg tau</th></tr></thead><tbody>` +
-    rows.map(r => `<tr class="${r.p.id === me.id ? "me" : ""}"><td>${esc(r.p.name)}</td><td class="${lead.exact > 0 && r.exact === lead.exact ? "lead" : ""}">${r.exact}</td><td class="${lead.agree > 0 && r.agree === lead.agree ? "lead" : ""}">${r.agree}</td><td>${r.avg == null ? "–" : (r.avg >= 0 ? "+" : "") + r.avg.toFixed(2)}</td></tr>`).join("") +
+  return `<section class="card"><h2>${title || "Scoreboard"}</h2><div style="overflow-x:auto"><table class="sb"><thead><tr><th>Player</th><th>Spot on</th><th>Avg tau</th></tr></thead><tbody>` +
+    rows.map(r => `<tr class="${r.p.id === me.id ? "me" : ""}"><td>${esc(r.p.name)}</td><td class="${lead.exact > 0 && r.exact === lead.exact ? "lead" : ""}">${r.exact}</td><td class="${lead.tau != null && r.avg === lead.tau ? "lead" : ""}">${r.avg == null ? "–" : fmtTau(r.avg)}</td></tr>`).join("") +
     `</tbody></table></div><p class="small muted">The two scores are kept separate. ★ marks the leader in each.</p></section>`;
 }
 function finalView() {
   const rows = scoreRows(); const lead = leaders(rows);
-  const who = k => rows.filter(r => r[k] === lead[k]).map(r => esc(r.p.name)).join(" & ");
-  const pairsTotal = state.history.reduce((s, h) => s + (h.items.length * (h.items.length - 1)) / 2, 0);
+  const who = k => rows.filter(r => (k === "tau" ? r.avg : r[k]) === lead[k]).map(r => esc(r.p.name)).join(" & ");
   // most predictable ranker: highest average guess total when they were ranking
   const pred = {};
-  state.history.forEach(h => { const v = Object.values(h.results); if (!v.length) return; const avg = v.reduce((s, x) => s + x.agree / x.total, 0) / v.length; pred[h.selector] = avg; });
+  state.history.forEach(h => { const v = Object.values(h.results); if (!v.length) return; const avg = v.reduce((s, x) => s + x.tau, 0) / v.length; pred[h.selector] = avg; });
   const pk = Object.keys(pred).sort((a, b) => pred[b] - pred[a])[0];
   return `<section class="card"><p class="eyebrow">Game over</p><h1>That's a wrap</h1>
     <div class="reveal-grid">
       <div><p class="eyebrow">Spot on leader</p><h2>${lead.exact > 0 ? `${who("exact")} · ${lead.exact}` : "Nobody yet"}</h2><p class="small muted">Most items in exactly the right place</p></div>
-      <div><p class="eyebrow">In sync leader</p><h2>${lead.agree > 0 ? `${who("agree")} · ${lead.agree}` : "Nobody yet"}</h2><p class="small muted">Most pairs in the same order as the ranker</p></div>
+      <div><p class="eyebrow">Tau leader</p><h2>${lead.tau != null ? `${who("tau")} · ${fmtTau(lead.tau)}` : "Nobody yet"}</h2><p class="small muted">Highest average correlation with the ranker</p></div>
     </div>
-    ${pk ? `<p class="muted">Easiest to read: <b>${esc(name(pk))}</b>, guessers matched ${Math.round(pred[pk] * 100)}% of their pairs.</p>` : ""}</section>` +
+    ${pk ? `<p class="muted">Easiest to read: <b>${esc(name(pk))}</b>, guessers averaged a tau of ${fmtTau(pred[pk])} on their turn.</p>` : ""}</section>` +
     scoreCard("Final scores") +
     `<section class="card">${isHost() ? `<button class="primary full" data-act="advance">Play again with the same people</button>` : `<p class="muted">${esc(name(state.hostId))} can start another game.</p>`}</section>`;
 }
