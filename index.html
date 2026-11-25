@@ -11,7 +11,7 @@
 /* Layout: one narrow column of "cards" like a stack of index cards on a game table; rank numbers are the visual hero. */
 :root{
   --paper:#f1eefb; --card:#ffffff; --ink:#1d1838; --muted:#6b6590; --line:#dcd6f2;
-  --accent:#ff4f6d; --accent-ink:#ffffff; --hot:#e0303f; --cold:#2f5fd8; --gold:#ffb627; --ok:#13a36b; --soft:#ece7ff;
+  --accent:#ff4f6d; --accent-ink:#ffffff; --hot:#e0303f; --cold:#2f5fd8; --m1:#8b5cf6; --m2:#22c7b8; --m3:#ec4fb3; --m4:#f5b62a; --gold:#ffb627; --ok:#13a36b; --soft:#ece7ff;
   --display:"Unbounded","Arial Black",system-ui,sans-serif;
   --body:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:light;
@@ -129,6 +129,14 @@ details.eli5 summary::before{content:"?";display:inline-grid;place-items:center;
 #joincode{text-transform:uppercase;text-align:center;font:800 22px/1 var(--display);letter-spacing:.2em;padding:10px}
 button.join{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 @media (max-width:340px){.split{grid-template-columns:1fr}}
+.waiting{display:flex;align-items:center;gap:14px;min-height:76px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,#8b5cf6 9%,var(--card));border:1px dashed color-mix(in srgb,#8b5cf6 40%,var(--line))}
+.waiting .wt{min-width:0;display:flex;flex-direction:column;gap:2px}
+.vision{font-style:italic;color:var(--muted);min-height:2.9em}
+.vision.in{animation:vin .6s ease-out}
+@keyframes vin{from{opacity:0;filter:blur(3px)}to{opacity:1;filter:none}}
+.orb.sm{width:52px;height:52px}
+.note{display:flex;gap:8px;align-items:flex-start;color:var(--muted)}
+.note span{flex:none;display:inline-grid;place-items:center;width:18px;height:18px;margin-top:1px;border-radius:50%;border:1.5px solid currentColor;font:700 11px/1 var(--body);font-style:italic}
 .fill{display:flex;flex-direction:column;gap:6px}
 .fillbtns{display:flex;flex-wrap:wrap;gap:6px}
 .fillbtns button{min-height:36px;padding:6px 12px;border-radius:999px;font-size:13px;background:var(--soft);border-color:transparent}
@@ -329,9 +337,10 @@ function onAct(a) {
         s.players.push({ id: pid, name });
         if (s.phase !== "lobby" && s.phase !== "submit" && s.phase !== "final") {
           s.order.push(pid);
-          if (s.source && s.source !== "players" && CATEGORIES[s.source]) {
+          { // late joiners get a turn as the Mind: deal them things from the category (or the random mix)
+            const list = (s.source && CATEGORIES[s.source]) ? CATEGORIES[s.source] : CATEGORIES.mix;
             const have = new Set(s.pool.map(it => it.text));
-            shuffle(CATEGORIES[s.source].items.filter(t => !have.has(t))).slice(0, s.n).forEach((text, i) => s.pool.push({ id: "c_" + s.game + "_j" + i + "_" + rid(3), text, by: "", used: false }));
+            shuffle(list.items.filter(t => !have.has(t))).slice(0, s.n).forEach((text, i) => s.pool.push({ id: "c_" + s.game + "_j" + i + "_" + rid(3), text, by: "", used: false }));
           }
         }
       }
@@ -439,7 +448,7 @@ function view() {
   if (!gotState) return `<section class="card"><h2>Finding room ${esc(room)}</h2><p class="muted">Connecting to the game. This takes a second or two.</p></section>`;
   if (!state) return `<section class="card"><h2>Room ${esc(room)} not found</h2><p class="muted">Check the code. If the host's phone is asleep or closed, ask them to open the game, then try again.</p><div class="row"><button class="primary" data-act="retry">Try again</button><button data-act="home">Back to start</button></div></section>`;
   const inRoom = state.players.some(p => p.id === me.id);
-  if (!inRoom) return `<section class="card"><h2>Joining ${esc(room)}…</h2><p class="muted">Waiting for the host's phone to let you in. If this hangs, the host may have closed the game.</p>${local.kicked ? `<button data-act="rejoin">Ask to rejoin</button>` : ""}</section>`;
+  if (!inRoom) return `<section class="card"><h2>Joining ${esc(room)}…</h2>${waiting("Waiting for the host's phone to let you in")}<p class="muted small">If this hangs, the host may have closed the game.</p>${local.kicked ? `<button data-act="rejoin">Ask to rejoin</button>` : ""}</section>`;
   const body = { lobby: lobbyView, submit: submitView, rank: rankView, reveal: revealView, final: finalView }[state.phase]();
   return body + footView();
 }
@@ -494,16 +503,36 @@ function playerChips(doneFn, kick) {
     return `<span class="chip ${d === true ? "done" : d === false ? "wait" : ""}">${p.id === state.hostId ? "★ " : ""}${esc(p.name)}${p.id === me.id ? " (you)" : ""}${d === true ? " ✓" : ""}${kick && isHost() && p.id !== me.id ? ` <button class="x" data-kick="${esc(p.id)}" aria-label="Remove ${esc(p.name)}">×</button>` : ""}</span>`;
   }).join("")}</div>`;
 }
+const VISIONS = [
+  "I see… a snack in your near future.",
+  "The spirits say someone is still deciding between #2 and #3.",
+  "Your aura is a lovely shade of hot pink.",
+  "A tall, dark stranger is agonizing over pizza vs. tacos.",
+  "The cards are aligning. Slowly. Very slowly.",
+  "I sense a three-way tie for last place.",
+  "Hydrate. The spirits insist.",
+  "Someone just ranked cats above dogs. Bold.",
+  "Breathe in for four… and out for four…",
+  "The crystal ball is buffering.",
+  "A vision! You, winning. Possibly. The fog is thick.",
+  "The Mind is thinking very hard. Do not disturb the Mind.",
+  "I foresee a surprising #1.",
+  "Patience is also a ranking. It's #1 right now.",
+];
+let visionIx = Math.floor(Math.random() * VISIONS.length);
+const waiting = msg => `<div class="waiting" aria-live="polite"><div class="orb sm" aria-hidden="true"></div><div class="wt"><p class="small"><b>${esc(msg)}</b></p><p class="vision small">${esc(VISIONS[visionIx % VISIONS.length])}</p></div></div>`;
+setInterval(() => { visionIx++; document.querySelectorAll(".vision").forEach(el => { el.classList.remove("in"); void el.offsetWidth; el.textContent = VISIONS[visionIx % VISIONS.length]; el.classList.add("in"); }); }, 5000);
+const joinNote = () => `<p class="note small"><span aria-hidden="true">i</span>No need to wait for everyone. The host can start any time, and anyone who opens the link later joins mid-game and still gets a turn.</p>`;
 const catMode = () => !!(state && state.source && state.source !== "players" && CATEGORIES[state.source]);
 function lobbyView() {
-  return shareCard() + `<section class="card"><h2>Who's playing</h2>${playerChips(null, true)}
+  return shareCard() + `<section class="card"><h2>Who's playing</h2>${playerChips(null, true)}${joinNote()}
     ${isHost() ? `<div style="display:flex;flex-direction:column;gap:6px"><label for="srcset">What will people rank?</label>
         <select id="srcset">${[["players", "Things everyone types in"]].concat(CAT_KEYS.map(k => [k, "Category: " + CATEGORIES[k].label])).map(([k, l]) => `<option value="${k}" ${(state.source || "players") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
         <p class="small muted">${catMode() ? `The game will deal ${esc(CATEGORIES[state.source].label.toLowerCase())} from a built-in list. Nobody needs to type anything.` : "Everyone adds their own things before the game starts."}</p></div>
       <div class="row"><label for="nset" class="grow">${catMode() ? "Things per round" : "Things per person and per round"}</label><input type="number" id="nset" min="3" max="7" value="${state.n}" style="width:84px"></div>
       <button class="primary full" data-act="advance" ${state.players.length < 2 ? "disabled" : ""}>${catMode() ? "Everyone's here, start the game" : "Everyone's here, add things"}</button>
       ${state.players.length < 2 ? `<p class="small muted">You need at least 2 players. Share the link above.</p>` : ""}`
-    : `<p class="muted">Waiting for ${esc(name(state.hostId))} to start. ${catMode() ? `You'll be ranking ${esc(CATEGORIES[state.source].label.toLowerCase())}, ${state.n} at a time.` : `Each person will add ${state.n} things.`}</p>`}</section>`;
+    : `<p class="muted">${catMode() ? `You'll be ranking ${esc(CATEGORIES[state.source].label.toLowerCase())}, ${state.n} at a time.` : `Each person will add ${state.n} things.`}</p>${waiting(`Waiting for ${name(state.hostId)} to start`)}`}</section>`;
 }
 function submitView() {
   const n = state.n; const done = state.items[me.id] && local.itemsSubmitted === state.game;
@@ -520,7 +549,7 @@ function submitView() {
     out += `<ol class="drawn">${state.items[me.id].map(t => `<li>${esc(t)}</li>`).join("")}</ol><button class="link" data-act="edititems">Edit mine</button>`;
   }
   out += `</section><section class="card"><h3>${ready} of ${state.players.length} ready</h3>${playerChips(p => !!state.items[p.id], true)}
-    ${isHost() ? `<button class="primary full" data-act="advance" ${ready < 2 ? "disabled" : ""}>${ready < state.players.length ? `Start with the ${ready} who are ready` : "Start the game"}</button>` : `<p class="small muted">${esc(name(state.hostId))} starts the game once everyone's in.</p>`}</section>`;
+    ${isHost() ? `<button class="primary full" data-act="advance" ${ready < 2 ? "disabled" : ""}>${ready < state.players.length ? `Start with the ${ready} who are ready` : "Start the game"}</button>` : ""}${joinNote()}${done ? waiting(ready < state.players.length ? `Waiting for ${state.players.length - ready} more` : `Waiting for ${name(state.hostId)} to start`) : ""}</section>`;
   return out;
 }
 // Heat color for the ranker's position k (0 = their #1 = hot red, last = cool blue).
@@ -541,7 +570,7 @@ function rankView() {
     <h2>${amSel ? "You're the Mind. Read these out loud." : `Read ${esc(name(selId))}’s mind`}</h2>
     ${amSel ? `<p class="muted small">Then rank them your way, in secret. Everyone else is trying to read your mind.</p>` : `<p class="muted small">Rank these the way you think ${esc(name(selId))} will, #1 at the top.</p>`}`;
   if (locked) {
-    out += `<p class="banner">Locked in. You can change it until the reveal.</p>${rankList(state.guesses[me.id], r.items)}<button class="link" data-act="unlock">Change my ranking</button>`;
+    out += `${waiting(inCount < total ? `Locked in. Waiting on ${total - inCount} more` : "Everyone's in. Reveal when ready")}${rankList(state.guesses[me.id], r.items)}<button class="link" data-act="unlock">Change my ranking</button>`;
   } else {
     const left = r.items.filter(i => !mine.includes(i.id));
     out += `<p class="small muted">Tap things in order, ${amSel ? "your #1" : "their #1"} first. Tap a ranked one to take it back.</p><div class="pick">` +
