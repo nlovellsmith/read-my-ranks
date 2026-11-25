@@ -117,6 +117,10 @@ details.eli5 summary::before{content:"?";display:inline-grid;place-items:center;
 .eli5 .box{border-radius:12px;padding:10px 12px;background:color-mix(in srgb,var(--gold) 18%,var(--card));display:flex;flex-direction:column;gap:4px}
 .eli5 .box h4{margin:0;font:700 14px/1.2 var(--display)}
 .eli5 .math{font-variant-numeric:tabular-nums;font-weight:700}
+.fill{display:flex;flex-direction:column;gap:6px}
+.fillbtns{display:flex;flex-wrap:wrap;gap:6px}
+.fillbtns button{min-height:36px;padding:6px 12px;border-radius:999px;font-size:13px;background:var(--soft);border-color:transparent}
+select{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px}
 .marquee{display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:6px 0 4px}
 .marquee .title{margin:0;font:800 clamp(44px,14.5vw,88px)/.9 var(--display);letter-spacing:-.03em;text-transform:uppercase;--purple:#7b5cff}
 .marquee .title .w{display:block;white-space:nowrap}
@@ -187,6 +191,20 @@ function scoreGuess(guess, answer) {
   return { exact, agree, total, tau, rho };
 }
 window.__scoreGuess = scoreGuess;
+
+// ---------- built-in categories (for fill buttons and category games) ----------
+const CATEGORIES = {
+  fruits: { label: "Fruits", items: ["Apple","Banana","Mango","Pineapple","Strawberry","Blueberry","Raspberry","Blackberry","Watermelon","Cantaloupe","Honeydew","Grapes","Orange","Clementine","Grapefruit","Lemon","Lime","Peach","Nectarine","Plum","Apricot","Cherry","Pear","Kiwi","Papaya","Guava","Passion fruit","Dragon fruit","Lychee","Pomegranate","Fig","Date","Coconut","Avocado","Persimmon","Star fruit","Cranberry","Gooseberry","Jackfruit","Durian","Tangerine","Blood orange","Quince","Rambutan","Kumquat","Mulberry","Plantain","Tomato"] },
+  foods: { label: "Foods", items: ["Pizza","Tacos","Sushi","Burgers","Fried chicken","Mac and cheese","Pad thai","Ramen","Burrito","Lasagna","Pho","Dumplings","Curry","Grilled cheese","Spaghetti and meatballs","Steak","Fish and chips","Falafel","Hot dog","Pancakes","Waffles","Bagel with cream cheese","Caesar salad","Chicken nuggets","Nachos","Quesadilla","Fried rice","BBQ ribs","Gyro","Shawarma","Pierogi","Paella","Poke bowl","Lobster roll","Clam chowder","Chili","Meatloaf","Biryani","Bibimbap","Pot roast","Tamales","Enchiladas","Eggs Benedict","Bánh mì","Risotto","Gnocchi","Tomato soup","Chicken pot pie"] },
+  snacks: { label: "Snacks & sweets", items: ["Popcorn","Potato chips","Pretzels","Ice cream","Chocolate chip cookies","Brownies","Cheesecake","Donuts","Gummy bears","Cupcakes","Apple pie","Churros","Cinnamon rolls","Milkshake","Trail mix","Cheese puffs","Tortilla chips and salsa","Popsicles","Croissant","Macarons","Tiramisu","Banana bread","S'mores","Cotton candy","Licorice","Peanut butter cups","Granola bar","Jelly beans","Frozen yogurt","Key lime pie","Carrot cake","Lemon bars","Rice crispy treats","Mochi","Fudge","Caramel corn","Pudding","Crème brûlée","Funnel cake","Beef jerky","Hummus and pita","Cheese and crackers","Mozzarella sticks","Onion rings","Soft pretzel","Candy corn","Baklava","Gelato"] },
+  animals: { label: "Animals", items: ["Dog","Cat","Elephant","Giraffe","Penguin","Dolphin","Octopus","Lion","Tiger","Panda","Koala","Kangaroo","Sloth","Otter","Owl","Eagle","Parrot","Flamingo","Shark","Whale","Horse","Cow","Pig","Goat","Sheep","Rabbit","Hamster","Turtle","Frog","Snake","Crocodile","Bear","Wolf","Fox","Raccoon","Squirrel","Hedgehog","Bat","Bee","Butterfly","Spider","Jellyfish","Seal","Moose","Camel","Zebra","Hippo","Llama"] },
+  places: { label: "Places to visit", items: ["Paris","Tokyo","New York City","Rome","London","Hawaii","Iceland","Grand Canyon","Bali","Barcelona","Machu Picchu","Sydney","Cairo","Rio de Janeiro","Yellowstone","Kyoto","Santorini","Amsterdam","Cape Town","Banff","Mexico City","Istanbul","Lisbon","Disney World","Las Vegas","Swiss Alps","Venice","Dubai","Seoul","Bangkok","New Orleans","Prague","Patagonia","The Maldives","Scottish Highlands","Marrakech","Costa Rica","Alaska","Buenos Aires","Vienna","Great Barrier Reef","Niagara Falls","Havana","Vancouver","Hong Kong","Edinburgh","Petra","The Amazon"] },
+  activities: { label: "Things to do", items: ["Going to the beach","Hiking","Camping","Reading a book","Watching a movie","Playing video games","Going to a concert","Cooking dinner","Baking","Road trip","Karaoke","Board game night","Skiing","Swimming","Biking","Yoga","Going to the gym","Painting","Gardening","Fishing","Bowling","Mini golf","Going to a museum","Shopping","Napping","Dancing","Picnic in the park","Theme park","Escape room","Going to a sports game","Stargazing","Bonfire","Learning an instrument","Thrift shopping","Spa day","Brunch with friends","Movie marathon","Kayaking","Rock climbing","Ice skating","Volunteering","Doing a puzzle","Farmers market","Bubble bath","Writing in a journal","Wine tasting","Sledding","Trivia night"] },
+  chores: { label: "Chores", items: ["Doing the dishes","Laundry","Folding clothes","Vacuuming","Mopping","Taking out the trash","Cleaning the bathroom","Cleaning the toilet","Making the bed","Grocery shopping","Mowing the lawn","Raking leaves","Shoveling snow","Dusting","Washing the car","Cleaning the fridge","Ironing","Walking the dog","Scooping the litter box","Watering plants","Weeding the garden","Changing the sheets","Cleaning windows","Emptying the dishwasher","Paying bills","Cooking dinner","Meal prep","Organizing the closet","Cleaning the oven","Unclogging the drain","Sweeping","Wiping counters","Decluttering","Cleaning the gutters","Putting away groceries","Returning packages","Answering emails","Scrubbing the shower","Sorting the mail","Recycling","Defrosting the freezer","Cleaning out the car","Replacing light bulbs","Assembling furniture","Painting a room","Cleaning the grill","Packing for a trip","Unpacking after a trip"] },
+  superpowers: { label: "Superpowers", items: ["Flying","Invisibility","Teleportation","Time travel","Mind reading","Super strength","Super speed","Shapeshifting","Breathing underwater","Talking to animals","Healing others","Never needing sleep","Controlling the weather","X-ray vision","Speaking every language","Pausing time","Walking through walls","Photographic memory","Immortality","Controlling fire","Controlling water","Seeing the future","Shrinking","Growing giant","Super hearing","Night vision","Instant learning","Duplicating yourself","Moving things with your mind","Unlimited luck","Never getting sick","Perfect cooking","Endless money","Breathing in space","Super stretchy body","Lie detection","Changing your age","Glowing in the dark","Summoning food","Talking to plants","Perfect sense of direction","Making anyone laugh","Controlling electricity","Breathing fire","Creating force fields","Rewinding 10 seconds","Magnet powers","Super jumping"] },
+};
+CATEGORIES.mix = { label: "Random mix", items: [...new Set(Object.values(CATEGORIES).flatMap(c => c.items))] };
+const CAT_KEYS = ["mix", "fruits", "foods", "snacks", "animals", "places", "activities", "chores", "superpowers"];
 
 // ---------- identity / local ----------
 const prof = store.get("rmr:profile", {});
@@ -289,7 +307,13 @@ function onAct(a) {
       if (player) { if (player.name === name) return; player.name = name; }
       else {
         s.players.push({ id: pid, name });
-        if (s.phase !== "lobby" && s.phase !== "submit" && s.phase !== "final") s.order.push(pid);
+        if (s.phase !== "lobby" && s.phase !== "submit" && s.phase !== "final") {
+          s.order.push(pid);
+          if (s.source && s.source !== "players" && CATEGORIES[s.source]) {
+            const have = new Set(s.pool.map(it => it.text));
+            shuffle(CATEGORIES[s.source].items.filter(t => !have.has(t))).slice(0, s.n).forEach((text, i) => s.pool.push({ id: "c_" + s.game + "_j" + i + "_" + rid(3), text, by: "", used: false }));
+          }
+        }
       }
       break;
     }
@@ -311,11 +335,21 @@ function onAct(a) {
       if (JSON.stringify(s.guesses[pid]) === JSON.stringify(ord)) return;
       s.guesses[pid] = ord; break;
     }
-    case "settings": { if (s.phase !== "lobby" || pid !== s.hostId) return; s.n = Math.max(3, Math.min(7, a.n | 0)); break; }
+    case "settings": { if (s.phase !== "lobby" || pid !== s.hostId) return; if (a.n != null) s.n = Math.max(3, Math.min(7, a.n | 0)); if (a.source != null) s.source = (a.source === "players" || CATEGORIES[a.source]) ? a.source : "players"; break; }
     case "kick": { if (pid !== s.hostId || a.id === s.hostId) return; s.players = s.players.filter(p => p.id !== a.id); delete s.guesses[a.id]; break; }
     case "advance": {
       if (a.from_phase !== s.phase || (a.key && a.key !== turnKey(s))) return;
-      if (s.phase === "lobby") { s.phase = "submit"; }
+      if (s.phase === "lobby") {
+        if (s.source && s.source !== "players" && CATEGORIES[s.source]) {
+          if (s.players.length < 2) return;
+          const need = s.players.length * s.n;
+          const picks = shuffle(CATEGORIES[s.source].items).slice(0, need);
+          s.pool = picks.map((text, i) => ({ id: "c_" + s.game + "_" + i + "_" + rid(3), text, by: "", used: false }));
+          s.order = shuffle(s.players.map(p => p.id)); s.turn = 0;
+          s.players.forEach(p => s.scores[p.id] = s.scores[p.id] || { exact: 0, agree: 0, rounds: 0 });
+          nextTurnOrEnd(s);
+        } else s.phase = "submit";
+      }
       else if (s.phase === "submit") {
         const ready = s.players.filter(p => s.items[p.id]);
         if (ready.length < 2) return;
@@ -440,12 +474,16 @@ function playerChips(doneFn, kick) {
     return `<span class="chip ${d === true ? "done" : d === false ? "wait" : ""}">${p.id === state.hostId ? "★ " : ""}${esc(p.name)}${p.id === me.id ? " (you)" : ""}${d === true ? " ✓" : ""}${kick && isHost() && p.id !== me.id ? ` <button class="x" data-kick="${esc(p.id)}" aria-label="Remove ${esc(p.name)}">×</button>` : ""}</span>`;
   }).join("")}</div>`;
 }
+const catMode = () => !!(state && state.source && state.source !== "players" && CATEGORIES[state.source]);
 function lobbyView() {
   return shareCard() + `<section class="card"><h2>Who's playing</h2>${playerChips(null, true)}
-    ${isHost() ? `<div class="row"><label for="nset" class="grow">Things per person and per round</label><input type="number" id="nset" min="3" max="7" value="${state.n}" style="width:84px"></div>
-      <button class="primary full" data-act="advance" ${state.players.length < 2 ? "disabled" : ""}>Everyone's here, add things</button>
+    ${isHost() ? `<div style="display:flex;flex-direction:column;gap:6px"><label for="srcset">What will people rank?</label>
+        <select id="srcset">${[["players", "Things everyone types in"]].concat(CAT_KEYS.map(k => [k, "Category: " + CATEGORIES[k].label])).map(([k, l]) => `<option value="${k}" ${(state.source || "players") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+        <p class="small muted">${catMode() ? `The game will deal ${esc(CATEGORIES[state.source].label.toLowerCase())} from a built-in list. Nobody needs to type anything.` : "Everyone adds their own things before the game starts."}</p></div>
+      <div class="row"><label for="nset" class="grow">${catMode() ? "Things per round" : "Things per person and per round"}</label><input type="number" id="nset" min="3" max="7" value="${state.n}" style="width:84px"></div>
+      <button class="primary full" data-act="advance" ${state.players.length < 2 ? "disabled" : ""}>${catMode() ? "Everyone's here, start the game" : "Everyone's here, add things"}</button>
       ${state.players.length < 2 ? `<p class="small muted">You need at least 2 players. Share the link above.</p>` : ""}`
-    : `<p class="muted">Waiting for ${esc(name(state.hostId))} to start. Each person will add ${state.n} things.</p>`}</section>`;
+    : `<p class="muted">Waiting for ${esc(name(state.hostId))} to start. ${catMode() ? `You'll be ranking ${esc(CATEGORIES[state.source].label.toLowerCase())}, ${state.n} at a time.` : `Each person will add ${state.n} things.`}</p>`}</section>`;
 }
 function submitView() {
   const n = state.n; const done = state.items[me.id] && local.itemsSubmitted === state.game;
@@ -456,7 +494,8 @@ function submitView() {
   if (!done) {
     out += `<p class="muted small">Anything rankable: foods, movies, chores, people you know, places. Others will see them, but not who wrote them.</p><div class="items">` +
       drafts.map((v, i) => `<div class="item-in"><span class="n">${i + 1}</span><input type="text" id="it${i}" data-item="${i}" maxlength="80" value="${esc(v)}" placeholder="Thing ${i + 1}" enterkeyhint="${i < n - 1 ? "next" : "done"}"></div>`).join("") +
-      `</div><button class="primary full" data-act="submititems" ${drafts.every(d => d.trim()) ? "" : "disabled"}>Submit my ${n}</button>`;
+      `</div><div class="fill"><p class="small muted">Stuck? Fill the empty spots with:</p><div class="fillbtns">${CAT_KEYS.map(k => `<button data-fill="${k}">${esc(CATEGORIES[k].label)}</button>`).join("")}</div></div>
+      <button class="primary full" data-act="submititems" ${drafts.every(d => d.trim()) ? "" : "disabled"}>Submit my ${n}</button>`;
   } else {
     out += `<ol class="drawn">${state.items[me.id].map(t => `<li>${esc(t)}</li>`).join("")}</ol><button class="link" data-act="edititems">Edit mine</button>`;
   }
@@ -478,7 +517,7 @@ function rankView() {
   const locked = local.locked === k && state.guesses[me.id];
   const total = state.players.length, inCount = state.players.filter(p => state.guesses[p.id]).length;
   const turnNo = state.turn + 1, of = state.order.length;
-  let out = `<section class="card"><p class="eyebrow">Turn ${turnNo} of ${of}</p>
+  let out = `<section class="card"><p class="eyebrow">Turn ${turnNo} of ${of}${catMode() ? " · " + esc(CATEGORIES[state.source].label) : ""}</p>
     <h2>${amSel ? "You're the ranker. Read these out loud." : `${esc(name(selId))} is ranking`}</h2>
     ${amSel ? `<p class="muted small">Then rank them your way. Everyone else is guessing your order.</p>` : `<p class="muted small">Rank these the way you think ${esc(name(selId))} will, #1 at the top.</p>`}`;
   if (locked) {
@@ -569,9 +608,18 @@ function wire() {
   const nm = $("#nm"); if (nm) nm.addEventListener("keydown", e => { if (e.key === "Enter") (document.querySelector('[data-act="create"]') || document.querySelector('[data-act="setname"]'))?.click(); });
   const jc = $("#joincode"); if (jc) jc.addEventListener("keydown", e => { if (e.key === "Enter") document.querySelector('[data-act="joincode"]').click(); });
   const ns = $("#nset"); if (ns) ns.addEventListener("change", () => send({ type: "settings", n: +ns.value }));
+  const ss = $("#srcset"); if (ss) ss.addEventListener("change", () => send({ type: "settings", source: ss.value }));
 }
 document.addEventListener("click", async e => {
   const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.fill) {
+    const list = CATEGORIES[b.dataset.fill]; if (!list || !state) return;
+    const n = state.n; local.items = (local.items || []).concat(Array(n).fill("")).slice(0, n);
+    const used = new Set(local.items.map(x => (x || "").trim().toLowerCase()).filter(Boolean));
+    const pool = shuffle(list.items.filter(t => !used.has(t.toLowerCase())));
+    let filled = 0; local.items = local.items.map(x => (x && x.trim()) ? x : (pool.length ? (filled++, pool.pop()) : x));
+    saveLocal(); render(); toast(filled ? `Filled ${filled} empty spot${filled > 1 ? "s" : ""}` : "No empty spots to fill"); return;
+  }
   if (b.dataset.kick) { send({ type: "kick", id: b.dataset.kick }); return; }
   if (b.dataset.pick) { const k = turnKey(state); local.ranks = local.ranks || {}; const m = local.ranks[k] = local.ranks[k] || []; if (!m.includes(b.dataset.pick)) m.push(b.dataset.pick); saveLocal(); render(); return; }
   if (b.dataset.unpick) { const k = turnKey(state); const m = local.ranks[k] || []; local.ranks[k] = m.filter(x => x !== b.dataset.unpick); saveLocal(); render(); return; }
