@@ -122,6 +122,13 @@ details.eli5 summary::before{content:"?";display:inline-grid;place-items:center;
 .facts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
 .facts li{display:flex;flex-direction:column;gap:3px;padding-bottom:12px;border-bottom:1px solid var(--line)}
 .facts li:last-child{border-bottom:0;padding-bottom:0}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.split .card{gap:10px;justify-content:space-between}
+.split .card>button{margin-top:auto}
+#joincode::placeholder{opacity:.45}
+#joincode{text-transform:uppercase;text-align:center;font:800 22px/1 var(--display);letter-spacing:.2em;padding:10px}
+button.join{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+@media (max-width:340px){.split{grid-template-columns:1fr}}
 .fill{display:flex;flex-direction:column;gap:6px}
 .fillbtns{display:flex;flex-wrap:wrap;gap:6px}
 .fillbtns button{min-height:36px;padding:6px 12px;border-radius:999px;font-size:13px;background:var(--soft);border-color:transparent}
@@ -442,12 +449,11 @@ function homeView() {
     <p class="muted">Everyone adds five things. Each turn, one player is the Mind: they secretly rank five things, and everyone else reads their mind to guess the order. Play on your own phones from one link.</p>
     <div><label for="nm">Your name</label></div>
     <input type="text" id="nm" maxlength="24" autocomplete="nickname" placeholder="e.g. Sam" value="${esc(me.name || "")}">
-    <button class="primary full" data-act="create">Start a new game</button>
   </section>
-  <section class="card">
-    <h3>Have a code?</h3>
-    <div class="row"><input class="grow" type="text" id="joincode" maxlength="10" placeholder="Room code" style="text-transform:uppercase"><button data-act="joincode">Join</button></div>
-  </section>
+  <div class="split">
+    <section class="card choice"><p class="eyebrow">Hosting?</p><h2>Create a game</h2><p class="small muted">Get a 3-letter code and share it with the group.</p><button class="primary full" data-act="create">Create</button></section>
+    <section class="card choice"><p class="eyebrow">Got a code?</p><h2>Join a game</h2><input type="text" id="joincode" maxlength="10" placeholder="CODE" autocapitalize="characters" autocomplete="off" aria-label="Room code"><button class="full join" data-act="joincode">Join</button></section>
+  </div>
   ${rulesCard(true)}`;
 }
 function nameView() {
@@ -695,7 +701,7 @@ function wire() {
     });
     inp.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); const nx = document.getElementById("it" + (+inp.dataset.item + 1)); if (nx) nx.focus(); else document.querySelector('[data-act="submititems"]')?.click(); } });
   });
-  const nm = $("#nm"); if (nm) nm.addEventListener("keydown", e => { if (e.key === "Enter") (document.querySelector('[data-act="create"]') || document.querySelector('[data-act="setname"]'))?.click(); });
+  const nm = $("#nm"); if (nm) nm.addEventListener("keydown", e => { if (e.key === "Enter") { const sn = document.querySelector('[data-act="setname"]'); if (sn) sn.click(); else nm.blur(); } });
   const jc = $("#joincode"); if (jc) jc.addEventListener("keydown", e => { if (e.key === "Enter") document.querySelector('[data-act="joincode"]').click(); });
   const ns = $("#nset"); if (ns) ns.addEventListener("change", () => send({ type: "settings", n: +ns.value }));
   const ss = $("#srcset"); if (ss) ss.addEventListener("change", () => send({ type: "settings", source: ss.value }));
