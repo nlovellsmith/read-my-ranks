@@ -11,7 +11,7 @@
 /* Layout: one narrow column of "cards" like a stack of index cards on a game table; rank numbers are the visual hero. */
 :root{
   --paper:#f1eefb; --card:#ffffff; --ink:#1d1838; --muted:#6b6590; --line:#dcd6f2;
-  --accent:#ff4f6d; --accent-ink:#ffffff; --gold:#ffb627; --ok:#13a36b; --soft:#ece7ff;
+  --accent:#ff4f6d; --accent-ink:#ffffff; --hot:#e0303f; --cold:#2f5fd8; --gold:#ffb627; --ok:#13a36b; --soft:#ece7ff;
   --display:"Unbounded","Arial Black",system-ui,sans-serif;
   --body:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:light;
@@ -86,6 +86,11 @@ button.full{width:100%}
 .miss{font-size:12px;color:var(--muted);white-space:nowrap}
 .ans .rl li{background:color-mix(in srgb,var(--gold) 26%,var(--card))}
 .ans .rl li .rk{color:var(--ink)}
+.rl.heat li{color:#fff;box-shadow:inset 0 0 0 0 transparent}
+.rl.heat li .rk,.ans .rl.heat li .rk{color:#fff;opacity:.9}
+.rl.heat li .miss{color:#fff;opacity:.85}
+.rl.heat li .mark{color:#fff;background:rgba(0,0,0,.28);padding:3px 7px;border-radius:999px}
+.rl.heat li.hit{box-shadow:inset 0 0 0 3px #fff,0 0 0 2px var(--ok)}
 .guess-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
 .pts{font:800 18px/1 var(--display)}
 .stats{font-size:13px;color:var(--muted)}
@@ -444,9 +449,12 @@ function submitView() {
     ${isHost() ? `<button class="primary full" data-act="advance" ${ready < 2 ? "disabled" : ""}>${ready < state.players.length ? `Start with the ${ready} who are ready` : "Start the game"}</button>` : `<p class="small muted">${esc(name(state.hostId))} starts the game once everyone's in.</p>`}</section>`;
   return out;
 }
-function rankList(order, items, answer) {
+// Heat color for the ranker's position k (0 = their #1 = hot red, last = cool blue).
+const heat = (k, n) => { const t = n > 1 ? k / (n - 1) : 0; return `color-mix(in oklab, var(--cold) ${Math.round(t * 100)}%, var(--hot))`; };
+function rankList(order, items, answer, heatRef) {
   const byId = Object.fromEntries(items.map(i => [i.id, i.text]));
-  return `<ol class="rl">${order.map((id, i) => `<li class="${answer && answer[i] === id ? "hit" : ""}"><span class="rk">${i + 1}</span><span class="t">${esc(byId[id])}</span>${answer ? (answer[i] === id ? `<span class="mark">✓ +1</span>` : `<span class="miss">they said #${answer.indexOf(id) + 1}</span>`) : "<span></span>"}</li>`).join("")}</ol>`;
+  const ref = heatRef || answer; const n = order.length;
+  return `<ol class="rl${ref ? " heat" : ""}">${order.map((id, i) => `<li class="${answer && answer[i] === id ? "hit" : ""}"${ref ? ` style="background:${heat(ref.indexOf(id), n)}"` : ""}><span class="rk">${i + 1}</span><span class="t">${esc(byId[id])}</span>${answer ? (answer[i] === id ? `<span class="mark">✓ +1</span>` : `<span class="miss">they said #${answer.indexOf(id) + 1}</span>`) : "<span></span>"}</li>`).join("")}</ol>`;
 }
 function rankView() {
   const r = state.round, k = turnKey(state), selId = r.selector, amSel = selId === me.id;
@@ -479,7 +487,7 @@ function rankView() {
 function revealView() {
   const r = state.round, res = r.results || {};
   const guessers = Object.keys(res).sort((a, b) => res[b].exact - res[a].exact || res[b].rho - res[a].rho);
-  let out = `<section class="card ans"><p class="eyebrow">Turn ${state.turn + 1} of ${state.order.length} · the answer</p><h2>${esc(name(r.selector))}'s real ranking</h2>${rankList(r.answer, r.items)}</section>`;
+  let out = `<section class="card ans"><p class="eyebrow">Turn ${state.turn + 1} of ${state.order.length} · the answer</p><h2>${esc(name(r.selector))}'s real ranking</h2>${rankList(r.answer, r.items, null, r.answer)}<p class="small muted">Colors follow ${esc(name(r.selector))}'s order: <b style="color:var(--hot)">red</b> is their #1, <b style="color:var(--cold)">blue</b> is their #${r.answer.length}. A perfect guess fades smoothly from red to blue.</p></section>`;
   out += `<section class="card"><h2>The guesses</h2><div class="reveal-grid">` + (guessers.length ? guessers.map(g => {
     const x = res[g];
     return `<div style="display:flex;flex-direction:column;gap:6px"><div class="guess-h"><h3>${esc(name(g))}${g === me.id ? " (you)" : ""}</h3></div>
