@@ -280,11 +280,11 @@ function newState() {
     items: {}, pool: [], order: [], turn: 0, round: null, guesses: {}, scores: {}, history: [] };
 }
 function publishState() { if (!state) return; state.ts = Date.now(); publish(T().state, state, true); }
-// Pick a 3-letter code nobody is using: a room counts as taken if its saved state was updated in the last 12 hours.
-const code3 = () => Array.from(crypto.getRandomValues(new Uint8Array(3)), b => CODE_LETTERS[b % CODE_LETTERS.length]).join("");
+// Pick a 4-letter code nobody is using: a room counts as taken if its saved state was updated in the last 12 hours.
+const code4 = () => Array.from(crypto.getRandomValues(new Uint8Array(4)), b => CODE_LETTERS[b % CODE_LETTERS.length]).join("");
 function pickFreeCode() {
   return new Promise(resolve => {
-    const cands = [...new Set(Array.from({ length: 8 }, code3))];
+    const cands = [...new Set(Array.from({ length: 8 }, code4))];
     if (!window.mqtt) return resolve(cands[0]);
     const taken = new Set(); let done = false;
     const c = mqtt.connect(BROKER, { clientId: "rmrp_" + rid(8), clean: true, reconnectPeriod: 0, connectTimeout: 6000 });
@@ -451,7 +451,7 @@ function homeView() {
     <input type="text" id="nm" maxlength="24" autocomplete="nickname" placeholder="e.g. Sam" value="${esc(me.name || "")}">
   </section>
   <div class="split">
-    <section class="card choice"><p class="eyebrow">Hosting?</p><h2>Create a game</h2><p class="small muted">Get a 3-letter code and share it with the group.</p><button class="primary full" data-act="create">Create</button></section>
+    <section class="card choice"><p class="eyebrow">Hosting?</p><h2>Create a game</h2><p class="small muted">Get a 4-letter code and share it with the group.</p><button class="primary full" data-act="create">Create</button></section>
     <section class="card choice"><p class="eyebrow">Got a code?</p><h2>Join a game</h2><input type="text" id="joincode" maxlength="10" placeholder="CODE" autocapitalize="characters" autocomplete="off" aria-label="Room code"><button class="full join" data-act="joincode">Join</button></section>
   </div>
   ${rulesCard(true)}`;
