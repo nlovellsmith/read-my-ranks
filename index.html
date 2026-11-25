@@ -117,6 +117,10 @@ details.eli5 summary::before{content:"?";display:inline-grid;place-items:center;
 .eli5 .box{border-radius:12px;padding:10px 12px;background:color-mix(in srgb,var(--gold) 18%,var(--card));display:flex;flex-direction:column;gap:4px}
 .eli5 .box h4{margin:0;font:700 14px/1.2 var(--display)}
 .eli5 .math{font-variant-numeric:tabular-nums;font-weight:700}
+.card>details.eli5:first-child{border-top:0;padding-top:0}
+.facts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.facts li{display:flex;flex-direction:column;gap:3px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.facts li:last-child{border-bottom:0;padding-bottom:0}
 .fill{display:flex;flex-direction:column;gap:6px}
 .fillbtns{display:flex;flex-wrap:wrap;gap:6px}
 .fillbtns button{min-height:36px;padding:6px 12px;border-radius:999px;font-size:13px;background:var(--soft);border-color:transparent}
@@ -367,8 +371,9 @@ function onAct(a) {
           sc.exact += r.exact; sc.agree += r.agree; sc.rounds++; sc.tau = (sc.tau || 0) + r.tau; sc.rho = (sc.rho || 0) + r.rho;
         });
         s.round.results = results; s.round.answer = ans; s.round.guesses = s.guesses;
-        s.history.push({ selector: s.round.selector, items: s.round.items, answer: ans, results });
-        if (s.history.length > 12) s.history.shift();
+        const hg = {}; Object.keys(results).forEach(g => hg[g] = s.guesses[g]);
+        s.history.push({ selector: s.round.selector, items: s.round.items, answer: ans, results, guesses: hg });
+        if (s.history.length > 40) s.history.shift();
         s.phase = "reveal";
       } else if (s.phase === "reveal") { s.turn++; nextTurnOrEnd(s); }
       else if (s.phase === "final") {
@@ -563,27 +568,72 @@ function scoreCard(title) {
   const rows = scoreRows(); const lead = leaders(rows);
   return `<section class="card"><h2>${title || "Scoreboard"}</h2><div style="overflow-x:auto"><table class="sb"><thead><tr><th>Player</th><th>Spot on</th><th>Total rho</th><th>Total tau</th></tr></thead><tbody>` +
     rows.map(r => `<tr class="${r.p.id === me.id ? "me" : ""}"><td>${esc(r.p.name)}</td><td class="${lead.exact > 0 && r.exact === lead.exact ? "lead" : ""}">${r.exact}</td><td class="${lead.rho != null && r.ravg === lead.rho ? "lead" : ""}">${r.ravg == null ? "–" : fmtTau(r.ravg)}</td><td class="${lead.tau != null && r.avg === lead.tau ? "lead" : ""}">${r.avg == null ? "–" : fmtTau(r.avg)}</td></tr>`).join("") +
-    `</tbody></table></div><p class="small muted">The scores are kept separate. ★ marks the leader in each.</p>${eli5()}</section>`;
+    `</tbody></table></div><p class="small muted">The scores are kept separate. ★ marks the leader in each.</p></section>`;
+}
+// Fun end-of-game insights, each one short line. Values from players are escaped.
+function insights() {
+  const H = state.history.filter(h => h.results && Object.keys(h.results).length);
+  if (!H.length) return [];
+  const out = []; const b = t => `<b>${esc(t)}</b>`; const q = t => `“${esc(t)}”`;
+  // Easiest / hardest to read (average guessers' rho on their turn)
+  const pred = H.map(h => { const v = Object.values(h.results); return { sel: h.selector, avg: v.reduce((a, x) => a + x.rho, 0) / v.length }; }).sort((a, b) => b.avg - a.avg);
+  out.push(["Easiest to read", `${b(name(pred[0].sel))}: guessers averaged rho ${fmtTau(pred[0].avg)} on their turn.`]);
+  if (pred.length > 1) { const w = pred[pred.length - 1]; out.push(["Hardest to read", `${b(name(w.sel))}: guessers averaged rho ${fmtTau(w.avg)}. A true mystery.`]); }
+  // Best and worst single read
+  const reads = []; H.forEach(h => Object.entries(h.results).forEach(([g, r]) => reads.push({ g, sel: h.selector, r })));
+  reads.sort((a, b) => b.r.rho - a.r.rho || b.r.exact - a.r.exact);
+  const best = reads[0], worst = reads[reads.length - 1];
+  out.push(["Best mind-read", `${b(name(best.g))} on ${b(name(best.sel))}'s turn: rho ${fmtTau(best.r.rho)}, ${best.r.exact} spot on.`]);
+  if (reads.length > 1 && worst.r.rho < best.r.rho) out.push(["Most upside-down read", `${b(name(worst.g))} on ${b(name(worst.sel))}'s turn: rho ${fmtTau(worst.r.rho)}.`]);
+  // Perfect reads
+  const perfect = reads.filter(x => x.r.rho >= 0.9999);
+  if (perfect.length) out.push(["Perfect reads", perfect.map(x => `${b(name(x.g))} → ${b(name(x.sel))}`).join(", ")]);
+  // Item-level: biggest upset, most obvious, most misjudged
+  let upset = null; const itemErr = [];
+  H.forEach(h => {
+    if (!h.guesses) return; const byId = Object.fromEntries(h.items.map(i => [i.id, i.text])); const n = h.answer.length;
+    const top = h.answer[0];
+    Object.entries(h.guesses).forEach(([g, ord]) => { if (!Array.isArray(ord)) return; const pos = ord.indexOf(top); if (pos > 0 && (!upset || pos > upset.pos)) upset = { g, sel: h.selector, text: byId[top], pos, n }; });
+    h.answer.forEach((id, k) => {
+      const gs = Object.values(h.guesses).filter(Array.isArray); if (!gs.length) return;
+      const err = gs.reduce((a, ord) => a + Math.abs(ord.indexOf(id) - k), 0) / gs.length;
+      itemErr.push({ text: byId[id], sel: h.selector, k, err });
+    });
+  });
+  if (upset) out.push(["Biggest upset", `${b(name(upset.sel))}'s #1, ${q(upset.text)}, was ranked #${upset.pos + 1} by ${b(name(upset.g))}.`]);
+  if (itemErr.length) {
+    itemErr.sort((a, b) => a.err - b.err);
+    const easy = itemErr[0], hard = itemErr[itemErr.length - 1];
+    out.push(["Everyone saw it coming", `${q(easy.text)} at #${easy.k + 1} for ${b(name(easy.sel))}${easy.err === 0 ? ", every guesser nailed it" : `, guesses were off by ${easy.err.toFixed(1)} spots on average`}.`]);
+    if (hard.err > easy.err) out.push(["Most misjudged thing", `${q(hard.text)}, ${b(name(hard.sel))}'s #${hard.k + 1}, guesses were off by ${hard.err.toFixed(1)} spots on average.`]);
+  }
+  // Most alike guessers (average rho between two guessers' lists on the same turn)
+  const pairs = {};
+  H.forEach(h => { if (!h.guesses) return; const gs = Object.entries(h.guesses).filter(([, o]) => Array.isArray(o));
+    for (let i = 0; i < gs.length; i++) for (let j = i + 1; j < gs.length; j++) { const key = [gs[i][0], gs[j][0]].sort().join("|"); const r = scoreGuess(gs[i][1], gs[j][1]).rho; (pairs[key] = pairs[key] || []).push(r); } });
+  const pk = Object.entries(pairs).map(([k, v]) => ({ k, avg: v.reduce((a, x) => a + x, 0) / v.length })).sort((a, b) => b.avg - a.avg);
+  if (pk.length) { const [x, y] = pk[0].k.split("|"); out.push(["Great minds think alike", `${b(name(x))} and ${b(name(y))} guessed most alike (rho ${fmtTau(pk[0].avg)} with each other).`]); }
+  if (pk.length > 1) { const [x, y] = pk[pk.length - 1].k.split("|"); if (pk[pk.length - 1].avg < pk[0].avg) out.push(["Never agree", `${b(name(x))} and ${b(name(y))} guessed least alike (rho ${fmtTau(pk[pk.length - 1].avg)}).`]); }
+  return out;
 }
 function finalView() {
   const rows = scoreRows(); const lead = leaders(rows);
   const who = k => rows.filter(r => ({ tau: r.avg, rho: r.ravg, exact: r.exact })[k] === lead[k]).map(r => esc(r.p.name)).join(" & ");
-  // most predictable ranker: highest average guess total when they were ranking
-  const pred = {};
-  state.history.forEach(h => { const v = Object.values(h.results); if (!v.length) return; const avg = v.reduce((s, x) => s + x.rho, 0) / v.length; pred[h.selector] = avg; });
-  const pk = Object.keys(pred).sort((a, b) => pred[b] - pred[a])[0];
+  const facts = insights();
   return `<section class="card"><p class="eyebrow">Game over</p><h1>That's a wrap</h1>
     <div class="reveal-grid">
       <div><p class="eyebrow">Spot on leader</p><h2>${lead.exact > 0 ? `${who("exact")} · ${lead.exact}` : "Nobody yet"}</h2><p class="small muted">Most items in exactly the right place</p></div>
       <div><p class="eyebrow">Spearman rho leader</p><h2>${lead.rho != null ? `${who("rho")} · ${fmtTau(lead.rho)}` : "Nobody yet"}</h2><p class="small muted">Highest rho added up over all turns</p></div>
       <div><p class="eyebrow">Kendall tau leader</p><h2>${lead.tau != null ? `${who("tau")} · ${fmtTau(lead.tau)}` : "Nobody yet"}</h2><p class="small muted">Highest tau added up over all turns</p></div>
     </div>
-    ${pk ? `<p class="muted">Easiest to read: <b>${esc(name(pk))}</b>, guessers averaged a rho of ${fmtTau(pred[pk])} on their turn.</p>` : ""}</section>` +
+    </section>` +
+    (facts.length ? `<section class="card"><h2>Game highlights</h2><ul class="facts">${facts.map(([t, l]) => `<li><p class="eyebrow">${esc(t)}</p><p>${l}</p></li>`).join("")}</ul></section>` : "") +
     scoreCard("Final scores") +
     `<section class="card">${isHost() ? `<button class="primary full" data-act="advance">Play again with the same people</button>` : `<p class="muted">${esc(name(state.hostId))} can start another game.</p>`}</section>`;
 }
 function footView() {
   return `${state.phase !== "lobby" && state.phase !== "reveal" && state.phase !== "final" && state.phase !== "submit" ? scoreCard() : ""}
+  <section class="card">${eli5()}</section>
   <div class="foot"><span>Room ${esc(room)} · you are ${esc(me.name)}</span><span>
   <button class="link" data-act="copylink">Invite link</button>
   ${!isHost() ? `<button class="link" data-act="takehost">Host left? Take over</button>` : ""}
