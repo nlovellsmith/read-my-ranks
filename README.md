@@ -1,4 +1,4 @@
-# Gideon’s Ranking Game
+# Gideon’s Mind Reading Game
 
 A party game you play from one link on everyone's phone.
 

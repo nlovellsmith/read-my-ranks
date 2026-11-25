@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Gideon’s Ranking Game</title>
-<meta name="description" content="A party game: guess how your friend ranks five things.">
+<title>Gideon’s Mind Reading Game</title>
+<meta name="description" content="A party game: read your friend’s mind and guess how they rank five things.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Unbounded:wght@500;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
 <style>
 /* Layout: one narrow column of "cards" like a stack of index cards on a game table; rank numbers are the visual hero. */
 :root{
@@ -125,18 +125,26 @@ details.eli5 summary::before{content:"?";display:inline-grid;place-items:center;
 .fillbtns{display:flex;flex-wrap:wrap;gap:6px}
 .fillbtns button{min-height:36px;padding:6px 12px;border-radius:999px;font-size:13px;background:var(--soft);border-color:transparent}
 select{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px}
-.marquee{display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:6px 0 4px}
-.marquee .title{margin:0;font:800 clamp(44px,14.5vw,88px)/.9 var(--display);letter-spacing:-.03em;text-transform:uppercase;--purple:#7b5cff}
+.marquee{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:6px 0 4px;--m1:#8b5cf6;--m2:#22c7b8;--m3:#ec4fb3;--m4:#f5b62a}
+.marquee .title{margin:0;font:400 clamp(46px,15vw,92px)/.95 "Shrikhand",var(--display);letter-spacing:.005em}
 .marquee .title .w{display:block;white-space:nowrap}
-.marquee .title .w.sm{font-size:.42em;letter-spacing:.04em;margin-bottom:.12em}
-.marquee .l{display:inline-block;color:var(--accent);animation:drop .7s cubic-bezier(.2,1.5,.45,1) both,wave 3.2s ease-in-out infinite;animation-delay:calc(var(--i) * 45ms),calc(var(--i) * -110ms)}
-.marquee .bars{display:flex;gap:6px;align-items:flex-end;height:60px}
-.marquee .bars span{display:grid;place-items:center;width:38px;border-radius:10px;font:800 17px/1 var(--display);color:var(--accent-ink);background:var(--accent);transform-origin:bottom;animation:grow .6s cubic-bezier(.2,1.4,.4,1) both;animation-delay:calc(var(--i) * 90ms + .5s)}
-@keyframes drop{from{transform:translateY(-.8em) rotate(-12deg);opacity:0}to{transform:none;opacity:1}}
-@keyframes wave{0%,100%{color:var(--accent)}33%{color:var(--gold)}66%{color:var(--purple)}}
-@keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
-@keyframes bob{0%,100%{translate:0 0}50%{translate:0 -5px}}
-@media (prefers-reduced-motion:reduce){.marquee .l,.marquee .bars span{animation:none}}
+.marquee .title .w.sm{font-size:.42em;letter-spacing:.06em;margin-bottom:.1em}
+.marquee .l{display:inline-block;color:var(--m1);text-shadow:0 0 .35em color-mix(in srgb,currentColor 55%,transparent);animation:drop .9s cubic-bezier(.2,1.3,.45,1) both,glow 4.5s ease-in-out infinite,float 3.6s ease-in-out infinite;animation-delay:calc(var(--i) * 55ms),calc(var(--i) * -160ms),calc(var(--i) * -180ms)}
+.marquee .seance{display:flex;align-items:center;gap:14px}
+.orb{position:relative;width:78px;height:78px;border-radius:50%;overflow:hidden;flex:none;background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.95),rgba(255,255,255,0) 17%),radial-gradient(circle at 50% 60%,#d8c8ff,var(--m1) 52%,#2a0f5c);box-shadow:0 0 26px color-mix(in srgb,var(--m1) 60%,transparent),inset 0 -10px 18px rgba(0,0,0,.35);animation:pulse 3.2s ease-in-out infinite}
+.orb::before{content:"";position:absolute;inset:-35%;background:conic-gradient(from 0deg,transparent 0 15%,color-mix(in srgb,var(--m3) 60%,transparent) 25%,transparent 40% 55%,color-mix(in srgb,var(--m2) 60%,transparent) 68%,transparent 80%);filter:blur(7px);animation:spin 7s linear infinite}
+.orb::after{content:"";position:absolute;left:22%;top:16%;width:22%;height:14%;border-radius:50%;background:rgba(255,255,255,.75);filter:blur(1px)}
+.orb-wrap{display:flex;flex-direction:column;align-items:center}
+.orb-wrap i{display:block;width:58px;height:14px;margin-top:-4px;border-radius:6px 6px 14px 14px;background:linear-gradient(var(--m4),#9a6b12)}
+.seance p{font-style:italic;color:var(--muted);max-width:22ch}
+.seance p span{display:inline-block;animation:ellipsis 1.6s steps(4,end) infinite;overflow:hidden;vertical-align:bottom;width:1.2em}
+@keyframes drop{from{transform:translateY(-.6em) scale(.6);opacity:0;filter:blur(6px)}to{transform:none;opacity:1;filter:none}}
+@keyframes glow{0%,100%{color:var(--m1)}25%{color:var(--m3)}50%{color:var(--m4)}75%{color:var(--m2)}}
+@keyframes float{0%,100%{translate:0 0}50%{translate:0 -.06em}}
+@keyframes pulse{0%,100%{box-shadow:0 0 18px color-mix(in srgb,var(--m1) 45%,transparent),inset 0 -10px 18px rgba(0,0,0,.35)}50%{box-shadow:0 0 38px color-mix(in srgb,var(--m3) 70%,transparent),inset 0 -10px 18px rgba(0,0,0,.35)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes ellipsis{from{width:0}to{width:1.2em}}
+@media (prefers-reduced-motion:reduce){.marquee .l,.orb,.orb::before,.seance p span{animation:none}}
 .hero-ranks{display:flex;gap:6px;align-items:flex-end}
 .hero-ranks span{display:grid;place-items:center;font:800 18px/1 var(--display);color:var(--accent-ink);background:var(--accent);border-radius:10px;width:40px}
 .foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
@@ -147,7 +155,7 @@ details summary{cursor:pointer;font-weight:700}
 <body>
 <div class="wrap">
   <header class="top">
-    <div class="logo"><span class="stack"><i></i><i></i><i></i></span>Gideon’s Ranking Game</div>
+    <div class="logo"><span class="stack"><i></i><i></i><i></i></span>Gideon’s Mind Reading Game</div>
     <div class="conn" id="conn" hidden><span class="dot" id="dot"></span><span id="connText">Connecting</span></div>
   </header>
   <main id="app" class="wrap" style="padding-top:0"></main>
@@ -428,9 +436,9 @@ function view() {
   return body + footView();
 }
 function homeView() {
-  return `<section class="marquee"><h1 class="title" aria-label="Gideon’s Ranking Game"><span class="w sm" aria-hidden="true"><span class="l" style="--i:0">G</span><span class="l" style="--i:1">i</span><span class="l" style="--i:2">d</span><span class="l" style="--i:3">e</span><span class="l" style="--i:4">o</span><span class="l" style="--i:5">n</span><span class="l" style="--i:6">’</span><span class="l" style="--i:7">s</span></span><span class="w" aria-hidden="true"><span class="l" style="--i:8">R</span><span class="l" style="--i:9">a</span><span class="l" style="--i:10">n</span><span class="l" style="--i:11">k</span><span class="l" style="--i:12">i</span><span class="l" style="--i:13">n</span><span class="l" style="--i:14">g</span></span><span class="w" aria-hidden="true"><span class="l" style="--i:15">G</span><span class="l" style="--i:16">a</span><span class="l" style="--i:17">m</span><span class="l" style="--i:18">e</span></span></h1><div class="bars" aria-hidden="true"><span style="--i:0;height:58px">1</span><span style="--i:1;height:46px">2</span><span style="--i:2;height:36px">3</span><span style="--i:3;height:27px">4</span><span style="--i:4;height:20px">5</span></div></section><section class="card" style="gap:16px">
-    <h2>How well do you know their ranks?</h2>
-    <p class="muted">Everyone adds five things. Each turn, one player ranks five of them and everyone else guesses the order. Play on your own phones from one link.</p>
+  return `<section class="marquee"><h1 class="title" aria-label="Gideon’s Mind Reading Game"><span class="w sm" aria-hidden="true"><span class="l" style="--i:0">G</span><span class="l" style="--i:1">i</span><span class="l" style="--i:2">d</span><span class="l" style="--i:3">e</span><span class="l" style="--i:4">o</span><span class="l" style="--i:5">n</span><span class="l" style="--i:6">’</span><span class="l" style="--i:7">s</span></span><span class="w" aria-hidden="true"><span class="l" style="--i:8">M</span><span class="l" style="--i:9">i</span><span class="l" style="--i:10">n</span><span class="l" style="--i:11">d</span></span><span class="w" aria-hidden="true"><span class="l" style="--i:12">R</span><span class="l" style="--i:13">e</span><span class="l" style="--i:14">a</span><span class="l" style="--i:15">d</span><span class="l" style="--i:16">i</span><span class="l" style="--i:17">n</span><span class="l" style="--i:18">g</span></span><span class="w" aria-hidden="true"><span class="l" style="--i:19">G</span><span class="l" style="--i:20">a</span><span class="l" style="--i:21">m</span><span class="l" style="--i:22">e</span></span></h1><div class="seance"><div class="orb-wrap" aria-hidden="true"><div class="orb"></div><i></i></div><p>The Mind is thinking of five things<span>…</span></p></div></section><section class="card" style="gap:16px">
+    <h2>Can you read their mind?</h2>
+    <p class="muted">Everyone adds five things. Each turn, one player is the Mind: they secretly rank five things, and everyone else reads their mind to guess the order. Play on your own phones from one link.</p>
     <div><label for="nm">Your name</label></div>
     <input type="text" id="nm" maxlength="24" autocomplete="nickname" placeholder="e.g. Sam" value="${esc(me.name || "")}">
     <button class="primary full" data-act="create">Start a new game</button>
@@ -448,23 +456,23 @@ function nameView() {
 }
 function eli5() {
   return `<details class="eli5"><summary>Rho vs tau, explained simply</summary><div class="body">
-    <p>Both answer one question: <b>how close was your order to the ranker's?</b> +1 means a perfect match, −1 means the exact opposite, and 0 means about as good as a random guess. They just keep score differently.</p>
+    <p>Both answer one question: <b>how well did you read the Mind?</b> +1 means a perfect match, −1 means the exact opposite, and 0 means about as good as a random guess. They just keep score differently.</p>
     <p class="muted">Tiny example with 3 things:</p>
-    <div class="ex"><div><b>Ranker said</b>1 Pizza<br>2 Tacos<br>3 Sushi</div><div><b>You said</b>1 Tacos<br>2 Pizza<br>3 Sushi</div></div>
+    <div class="ex"><div><b>The Mind said</b>1 Pizza<br>2 Tacos<br>3 Sushi</div><div><b>You said</b>1 Tacos<br>2 Pizza<br>3 Sushi</div></div>
     <div class="box"><h4>Spearman rho: how far did each thing wander?</h4>
       <p>Count how many spots each thing is off from its real spot: Pizza 1, Tacos 1, Sushi 0. Square those (1, 1, 0) and add them up: 2. Squaring makes a big wander hurt a lot more than a small one.</p>
       <p class="math">rho = 1 − (6 × 2) ÷ (3 × 8) = +0.50</p><p class="small muted">The 6 and the 3 × 8 are fixed numbers for 3 things. They just scale the answer to fit between −1 and +1.</p></div>
     <div class="box"><h4>Kendall tau: check every pair</h4>
       <p>Look at each pair and ask, "did you put these two in the same order?" Pizza and Tacos: flipped ✗. Pizza and Sushi: ✓. Tacos and Sushi: ✓. That's 2 right and 1 wrong out of 3 pairs.</p>
       <p class="math">tau = (2 right − 1 wrong) ÷ 3 pairs = +0.33</p></div>
-    <p><b>Where they differ:</b> with 5 things, if you swap only the ranker's #1 and #5, rho drops to −0.60 but tau only drops to −0.40. Rho punishes one big miss harder. Tau treats every flipped pair the same.</p>
+    <p><b>Where they differ:</b> with 5 things, if you swap only the Mind's #1 and #5, rho drops to −0.60 but tau only drops to −0.40. Rho punishes one big miss harder. Tau treats every flipped pair the same.</p>
   </div></details>`;
 }
 function rulesCard(closed) {
   return `<section class="card"><details ${closed ? "" : "open"}><summary>How scoring works</summary>
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px" class="small">
-    <p><b>Spot on:</b> 1 point for each item you put in exactly the same place as the ranker.</p>
-    <p><b>Spearman rho</b> and <b>Kendall tau</b> are two rank correlations between your order and the ranker's. Both run from +1 (identical order) to −1 (exactly reversed), with 0 about chance. Rho is based on how far each item is from its true spot, so one big miss costs a lot. Tau counts pairs of items in the right order, so it treats every swap equally. Each turn's rho and tau are added up, so reading people well builds a big positive total and reading them badly builds a big negative one.</p>
+    <p><b>Spot on:</b> 1 point for each item you put in exactly the same place as the Mind.</p>
+    <p><b>Spearman rho</b> and <b>Kendall tau</b> are two rank correlations between your order and the Mind's. Both run from +1 (identical order) to −1 (exactly reversed), with 0 about chance. Rho is based on how far each item is from its true spot, so one big miss costs a lot. Tau counts pairs of items in the right order, so it treats every swap equally. Each turn's rho and tau are added up, so reading people well builds a big positive total and reading them badly builds a big negative one.</p>
     <p>The scores are never added together. Each has its own leader.</p></div></details>${eli5()}</section>`;
 }
 function shareCard() {
@@ -523,8 +531,8 @@ function rankView() {
   const total = state.players.length, inCount = state.players.filter(p => state.guesses[p.id]).length;
   const turnNo = state.turn + 1, of = state.order.length;
   let out = `<section class="card"><p class="eyebrow">Turn ${turnNo} of ${of}${catMode() ? " · " + esc(CATEGORIES[state.source].label) : ""}</p>
-    <h2>${amSel ? "You're the ranker. Read these out loud." : `${esc(name(selId))} is ranking`}</h2>
-    ${amSel ? `<p class="muted small">Then rank them your way. Everyone else is guessing your order.</p>` : `<p class="muted small">Rank these the way you think ${esc(name(selId))} will, #1 at the top.</p>`}`;
+    <h2>${amSel ? "You're the Mind. Read these out loud." : `Read ${esc(name(selId))}’s mind`}</h2>
+    ${amSel ? `<p class="muted small">Then rank them your way, in secret. Everyone else is trying to read your mind.</p>` : `<p class="muted small">Rank these the way you think ${esc(name(selId))} will, #1 at the top.</p>`}`;
   if (locked) {
     out += `<p class="banner">Locked in. You can change it until the reveal.</p>${rankList(state.guesses[me.id], r.items)}<button class="link" data-act="unlock">Change my ranking</button>`;
   } else {
@@ -534,11 +542,11 @@ function rankView() {
         return it ? `<button class="slot filled" data-unpick="${esc(id)}"><span class="rk">${i + 1}</span><span class="t">${esc(it.text)}</span><span class="act">undo</span></button>`
                   : `<div class="slot"><span class="rk" style="opacity:.35">${i + 1}</span><span class="t muted small">${i === mine.length ? "Tap a thing below" : ""}</span><span></span></div>`; }).join("") +
       `</div>${left.length ? `<div class="pool">${left.map(i => `<button data-pick="${esc(i.id)}">${esc(i.text)}</button>`).join("")}</div>` : ""}
-      <button class="primary full" data-act="lock" ${mine.length === r.items.length ? "" : "disabled"}>${amSel ? "Lock in my real ranking" : "Lock in my guess"}</button>`;
+      <button class="primary full" data-act="lock" ${mine.length === r.items.length ? "" : "disabled"}>${amSel ? "Lock in my real ranking" : "Lock in my reading"}</button>`;
   }
   out += `</section><section class="card"><h3>${inCount} of ${total} locked in</h3>${playerChips(p => !!state.guesses[p.id], false)}`;
   const selIn = !!state.guesses[selId];
-  if (inCount === total) out += `<button class="primary full" data-act="advance">Reveal the ranking</button>`;
+  if (inCount === total) out += `<button class="primary full" data-act="advance">Reveal the Mind’s ranking</button>`;
   else if (selIn && (isHost() || amSel)) out += `<button class="ghost full" data-act="advance">Reveal now (skip anyone still deciding)</button>`;
   else if (!selIn) out += `<p class="small muted">Waiting on ${amSel ? "you" : esc(name(selId))} for the real ranking.</p>`;
   return out + `</section>`;
@@ -546,12 +554,12 @@ function rankView() {
 function revealView() {
   const r = state.round, res = r.results || {};
   const guessers = Object.keys(res).sort((a, b) => res[b].exact - res[a].exact || res[b].rho - res[a].rho);
-  let out = `<section class="card ans"><p class="eyebrow">Turn ${state.turn + 1} of ${state.order.length} · the answer</p><h2>${esc(name(r.selector))}'s real ranking</h2>${rankList(r.answer, r.items, null, r.answer)}<p class="small muted">Colors follow ${esc(name(r.selector))}'s order: <b style="color:var(--hot)">red</b> is their #1, <b style="color:var(--cold)">blue</b> is their #${r.answer.length}. A perfect guess fades smoothly from red to blue.</p></section>`;
-  out += `<section class="card"><h2>The guesses</h2><div class="reveal-grid">` + (guessers.length ? guessers.map(g => {
+  let out = `<section class="card ans"><p class="eyebrow">Turn ${state.turn + 1} of ${state.order.length} · the answer</p><h2>${esc(name(r.selector))}'s real ranking</h2>${rankList(r.answer, r.items, null, r.answer)}<p class="small muted">Colors follow the Mind’s order: <b style="color:var(--hot)">red</b> is their #1, <b style="color:var(--cold)">blue</b> is their #${r.answer.length}. A perfect reading fades smoothly from red to blue.</p></section>`;
+  out += `<section class="card"><h2>The mind readings</h2><div class="reveal-grid">` + (guessers.length ? guessers.map(g => {
     const x = res[g];
     return `<div style="display:flex;flex-direction:column;gap:6px"><div class="guess-h"><h3>${esc(name(g))}${g === me.id ? " (you)" : ""}</h3></div>
       <p class="stats"><b>Spot on:</b> ${x.exact} of ${x.total ? r.items.length : 0} items · <b>Spearman rho:</b> ${fmtTau(x.rho)} · <b>Kendall tau:</b> ${fmtTau(x.tau)}</p>${rankList(r.guesses[g], r.items, r.answer)}</div>`;
-  }).join("") : `<p class="muted">Nobody guessed this round.</p>`) + `</div>
+  }).join("") : `<p class="muted">Nobody read their mind this round.</p>`) + `</div>
     <button class="primary full" data-act="advance">${state.turn + 1 >= state.order.length ? "See final scores" : "Next turn"}</button></section>`;
   return out + scoreCard();
 }
@@ -577,14 +585,14 @@ function insights() {
   const out = []; const b = t => `<b>${esc(t)}</b>`; const q = t => `“${esc(t)}”`;
   // Easiest / hardest to read (average guessers' rho on their turn)
   const pred = H.map(h => { const v = Object.values(h.results); return { sel: h.selector, avg: v.reduce((a, x) => a + x.rho, 0) / v.length }; }).sort((a, b) => b.avg - a.avg);
-  out.push(["Easiest to read", `${b(name(pred[0].sel))}: guessers averaged rho ${fmtTau(pred[0].avg)} on their turn.`]);
-  if (pred.length > 1) { const w = pred[pred.length - 1]; out.push(["Hardest to read", `${b(name(w.sel))}: guessers averaged rho ${fmtTau(w.avg)}. A true mystery.`]); }
+  out.push(["Easiest to read", `${b(name(pred[0].sel))}: mind readers averaged rho ${fmtTau(pred[0].avg)} on their turn.`]);
+  if (pred.length > 1) { const w = pred[pred.length - 1]; out.push(["Hardest to read", `${b(name(w.sel))}: mind readers averaged rho ${fmtTau(w.avg)}. A true mystery.`]); }
   // Best and worst single read
   const reads = []; H.forEach(h => Object.entries(h.results).forEach(([g, r]) => reads.push({ g, sel: h.selector, r })));
   reads.sort((a, b) => b.r.rho - a.r.rho || b.r.exact - a.r.exact);
   const best = reads[0], worst = reads[reads.length - 1];
-  out.push(["Best mind-read", `${b(name(best.g))} on ${b(name(best.sel))}'s turn: rho ${fmtTau(best.r.rho)}, ${best.r.exact} spot on.`]);
-  if (reads.length > 1 && worst.r.rho < best.r.rho) out.push(["Most upside-down read", `${b(name(worst.g))} on ${b(name(worst.sel))}'s turn: rho ${fmtTau(worst.r.rho)}.`]);
+  out.push(["Best mind reading", `${b(name(best.g))} on ${b(name(best.sel))}'s turn: rho ${fmtTau(best.r.rho)}, ${best.r.exact} spot on.`]);
+  if (reads.length > 1 && worst.r.rho < best.r.rho) out.push(["Most upside-down reading", `${b(name(worst.g))} on ${b(name(worst.sel))}'s turn: rho ${fmtTau(worst.r.rho)}.`]);
   // Perfect reads
   const perfect = reads.filter(x => x.r.rho >= 0.9999);
   if (perfect.length) out.push(["Perfect reads", perfect.map(x => `${b(name(x.g))} → ${b(name(x.sel))}`).join(", ")]);
@@ -604,16 +612,16 @@ function insights() {
   if (itemErr.length) {
     itemErr.sort((a, b) => a.err - b.err);
     const easy = itemErr[0], hard = itemErr[itemErr.length - 1];
-    out.push(["Everyone saw it coming", `${q(easy.text)} at #${easy.k + 1} for ${b(name(easy.sel))}${easy.err === 0 ? ", every guesser nailed it" : `, guesses were off by ${easy.err.toFixed(1)} spots on average`}.`]);
-    if (hard.err > easy.err) out.push(["Most misjudged thing", `${q(hard.text)}, ${b(name(hard.sel))}'s #${hard.k + 1}, guesses were off by ${hard.err.toFixed(1)} spots on average.`]);
+    out.push(["Everyone saw it coming", `${q(easy.text)} at #${easy.k + 1} for ${b(name(easy.sel))}${easy.err === 0 ? ", every mind reader nailed it" : `, readings were off by ${easy.err.toFixed(1)} spots on average`}.`]);
+    if (hard.err > easy.err) out.push(["Most misjudged thing", `${q(hard.text)}, ${b(name(hard.sel))}'s #${hard.k + 1}, readings were off by ${hard.err.toFixed(1)} spots on average.`]);
   }
   // Most alike guessers (average rho between two guessers' lists on the same turn)
   const pairs = {};
   H.forEach(h => { if (!h.guesses) return; const gs = Object.entries(h.guesses).filter(([, o]) => Array.isArray(o));
     for (let i = 0; i < gs.length; i++) for (let j = i + 1; j < gs.length; j++) { const key = [gs[i][0], gs[j][0]].sort().join("|"); const r = scoreGuess(gs[i][1], gs[j][1]).rho; (pairs[key] = pairs[key] || []).push(r); } });
   const pk = Object.entries(pairs).map(([k, v]) => ({ k, avg: v.reduce((a, x) => a + x, 0) / v.length })).sort((a, b) => b.avg - a.avg);
-  if (pk.length) { const [x, y] = pk[0].k.split("|"); out.push(["Great minds think alike", `${b(name(x))} and ${b(name(y))} guessed most alike (rho ${fmtTau(pk[0].avg)} with each other).`]); }
-  if (pk.length > 1) { const [x, y] = pk[pk.length - 1].k.split("|"); if (pk[pk.length - 1].avg < pk[0].avg) out.push(["Never agree", `${b(name(x))} and ${b(name(y))} guessed least alike (rho ${fmtTau(pk[pk.length - 1].avg)}).`]); }
+  if (pk.length) { const [x, y] = pk[0].k.split("|"); out.push(["Great minds think alike", `${b(name(x))} and ${b(name(y))} read minds most alike (rho ${fmtTau(pk[0].avg)} with each other).`]); }
+  if (pk.length > 1) { const [x, y] = pk[pk.length - 1].k.split("|"); if (pk[pk.length - 1].avg < pk[0].avg) out.push(["Never agree", `${b(name(x))} and ${b(name(y))} read minds least alike (rho ${fmtTau(pk[pk.length - 1].avg)}).`]); }
   return out;
 }
 function finalView() {
@@ -623,8 +631,8 @@ function finalView() {
   return `<section class="card"><p class="eyebrow">Game over</p><h1>That's a wrap</h1>
     <div class="reveal-grid">
       <div><p class="eyebrow">Spot on leader</p><h2>${lead.exact > 0 ? `${who("exact")} · ${lead.exact}` : "Nobody yet"}</h2><p class="small muted">Most items in exactly the right place</p></div>
-      <div><p class="eyebrow">Spearman rho leader</p><h2>${lead.rho != null ? `${who("rho")} · ${fmtTau(lead.rho)}` : "Nobody yet"}</h2><p class="small muted">Highest rho added up over all turns</p></div>
-      <div><p class="eyebrow">Kendall tau leader</p><h2>${lead.tau != null ? `${who("tau")} · ${fmtTau(lead.tau)}` : "Nobody yet"}</h2><p class="small muted">Highest tau added up over all turns</p></div>
+      <div><p class="eyebrow">Spearman rho leader</p><h2>${lead.rho != null ? `${who("rho")} · ${fmtTau(lead.rho)}` : "Nobody yet"}</h2><p class="small muted">Highest rho added up over all readings</p></div>
+      <div><p class="eyebrow">Kendall tau leader</p><h2>${lead.tau != null ? `${who("tau")} · ${fmtTau(lead.tau)}` : "Nobody yet"}</h2><p class="small muted">Highest tau added up over all readings</p></div>
     </div>
     </section>` +
     (facts.length ? `<section class="card"><h2>Game highlights</h2><ul class="facts">${facts.map(([t, l]) => `<li><p class="eyebrow">${esc(t)}</p><p>${l}</p></li>`).join("")}</ul></section>` : "") +
@@ -693,7 +701,7 @@ document.addEventListener("click", async e => {
     case "home": location.hash = ""; location.reload(); break;
     case "copylink": {
       const link = roomLink();
-      try { if (navigator.share && matchMedia("(pointer:coarse)").matches) { await navigator.share({ title: "Gideon’s Ranking Game", text: "Join my game, room " + room, url: link }); return; } } catch (err) { if (err && err.name === "AbortError") return; }
+      try { if (navigator.share && matchMedia("(pointer:coarse)").matches) { await navigator.share({ title: "Gideon’s Mind Reading Game", text: "Join my game, room " + room, url: link }); return; } } catch (err) { if (err && err.name === "AbortError") return; }
       try { await navigator.clipboard.writeText(link); toast("Link copied"); } catch { prompt("Copy this link", link); }
       break;
     }
