@@ -100,6 +100,18 @@ table.sb tr.me td{font-weight:700}
 .err{background:color-mix(in srgb,var(--accent) 22%,var(--card))}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:700;z-index:5;max-width:calc(100% - 32px)}
 
+
+details.eli5{border-top:1px solid var(--line);padding-top:10px}
+details.eli5 summary{font-size:14px;color:var(--accent);list-style:none;display:flex;align-items:center;gap:6px}
+details.eli5 summary::-webkit-details-marker{display:none}
+details.eli5 summary::before{content:"?";display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font:800 12px/1 var(--display)}
+.eli5 .body{display:flex;flex-direction:column;gap:10px;margin-top:10px;font-size:14px}
+.eli5 .ex{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.eli5 .ex div{background:var(--soft);border-radius:10px;padding:8px 10px;min-width:0}
+.eli5 .ex b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.eli5 .box{border-radius:12px;padding:10px 12px;background:color-mix(in srgb,var(--gold) 18%,var(--card));display:flex;flex-direction:column;gap:4px}
+.eli5 .box h4{margin:0;font:700 14px/1.2 var(--display)}
+.eli5 .math{font-variant-numeric:tabular-nums;font-weight:700}
 .marquee{display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:6px 0 4px}
 .marquee .title{margin:0;font:800 clamp(44px,14.5vw,88px)/.9 var(--display);letter-spacing:-.03em;text-transform:uppercase;--purple:#7b5cff}
 .marquee .title .w{display:block;white-space:nowrap}
@@ -375,12 +387,26 @@ function nameView() {
     <input type="text" id="nm" maxlength="24" autocomplete="nickname" placeholder="Your name">
     <button class="primary full" data-act="setname">Join game</button></section>${rulesCard(true)}`;
 }
+function eli5() {
+  return `<details class="eli5"><summary>Rho vs tau, explained simply</summary><div class="body">
+    <p>Both answer one question: <b>how close was your order to the ranker's?</b> +1 means a perfect match, −1 means the exact opposite, and 0 means about as good as a random guess. They just keep score differently.</p>
+    <p class="muted">Tiny example with 3 things:</p>
+    <div class="ex"><div><b>Ranker said</b>1 Pizza<br>2 Tacos<br>3 Sushi</div><div><b>You said</b>1 Tacos<br>2 Pizza<br>3 Sushi</div></div>
+    <div class="box"><h4>Spearman rho: how far did each thing wander?</h4>
+      <p>Count how many spots each thing is off from its real spot: Pizza 1, Tacos 1, Sushi 0. Square those (1, 1, 0) and add them up: 2. Squaring makes a big wander hurt a lot more than a small one.</p>
+      <p class="math">rho = 1 − (6 × 2) ÷ (3 × 8) = +0.50</p><p class="small muted">The 6 and the 3 × 8 are fixed numbers for 3 things. They just scale the answer to fit between −1 and +1.</p></div>
+    <div class="box"><h4>Kendall tau: check every pair</h4>
+      <p>Look at each pair and ask, "did you put these two in the same order?" Pizza and Tacos: flipped ✗. Pizza and Sushi: ✓. Tacos and Sushi: ✓. That's 2 right and 1 wrong out of 3 pairs.</p>
+      <p class="math">tau = (2 right − 1 wrong) ÷ 3 pairs = +0.33</p></div>
+    <p><b>Where they differ:</b> with 5 things, if you swap only the ranker's #1 and #5, rho drops to −0.60 but tau only drops to −0.40. Rho punishes one big miss harder. Tau treats every flipped pair the same.</p>
+  </div></details>`;
+}
 function rulesCard(closed) {
   return `<section class="card"><details ${closed ? "" : "open"}><summary>How scoring works</summary>
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px" class="small">
     <p><b>Spot on:</b> 1 point for each item you put in exactly the same place as the ranker.</p>
     <p><b>Spearman rho</b> and <b>Kendall tau</b> are two rank correlations between your order and the ranker's. Both run from +1 (identical order) to −1 (exactly reversed), with 0 about chance. Rho is based on how far each item is from its true spot, so one big miss costs a lot. Tau counts pairs of items in the right order, so it treats every swap equally. Each turn's rho and tau are added up, so reading people well builds a big positive total and reading them badly builds a big negative one.</p>
-    <p>The scores are never added together. Each has its own leader.</p></div></details></section>`;
+    <p>The scores are never added together. Each has its own leader.</p></div></details>${eli5()}</section>`;
 }
 function shareCard() {
   return `<section class="card"><div class="share"><div style="min-width:0;display:flex;flex-direction:column;gap:8px">
@@ -475,7 +501,7 @@ function scoreCard(title) {
   const rows = scoreRows(); const lead = leaders(rows);
   return `<section class="card"><h2>${title || "Scoreboard"}</h2><div style="overflow-x:auto"><table class="sb"><thead><tr><th>Player</th><th>Spot on</th><th>Total rho</th><th>Total tau</th></tr></thead><tbody>` +
     rows.map(r => `<tr class="${r.p.id === me.id ? "me" : ""}"><td>${esc(r.p.name)}</td><td class="${lead.exact > 0 && r.exact === lead.exact ? "lead" : ""}">${r.exact}</td><td class="${lead.rho != null && r.ravg === lead.rho ? "lead" : ""}">${r.ravg == null ? "–" : fmtTau(r.ravg)}</td><td class="${lead.tau != null && r.avg === lead.tau ? "lead" : ""}">${r.avg == null ? "–" : fmtTau(r.avg)}</td></tr>`).join("") +
-    `</tbody></table></div><p class="small muted">The scores are kept separate. ★ marks the leader in each.</p></section>`;
+    `</tbody></table></div><p class="small muted">The scores are kept separate. ★ marks the leader in each.</p>${eli5()}</section>`;
 }
 function finalView() {
   const rows = scoreRows(); const lead = leaders(rows);
