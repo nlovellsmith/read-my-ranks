@@ -156,6 +156,7 @@ const qs = new URLSearchParams(location.search);
 const BROKER = qs.get("broker") || "wss://broker.hivemq.com:8884/mqtt";
 const NS = "readmyranks/v1/";
 const ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const CODE_LETTERS = "ABCDEFGHJKMNPQRSTUVWXYZ"; // no I, L, O: easy to read aloud and type
 
 // ---------- helpers ----------
 const $ = s => document.querySelector(s);
@@ -191,7 +192,7 @@ window.__scoreGuess = scoreGuess;
 const prof = store.get("rmr:profile", {});
 if (!prof.id) { prof.id = rid(10); store.set("rmr:profile", prof); }
 const me = prof; // {id, name}
-let room = (location.hash.replace("#", "").toUpperCase().match(/^[A-Z0-9]{4,10}$/) || [null])[0];
+let room = (location.hash.replace("#", "").toUpperCase().match(/^[A-Z0-9]{3,10}$/) || [null])[0];
 let local = room ? store.get("rmr:room:" + room, {}) : {};
 const saveLocal = () => room && store.set("rmr:room:" + room, local);
 
@@ -240,7 +241,21 @@ function newState() {
   return { v: 1, game: 1, hostId: me.id, n: 5, phase: "lobby", players: [{ id: me.id, name: me.name || "Host" }],
     items: {}, pool: [], order: [], turn: 0, round: null, guesses: {}, scores: {}, history: [] };
 }
-function publishState() { if (!state) return; publish(T().state, state, true); }
+function publishState() { if (!state) return; state.ts = Date.now(); publish(T().state, state, true); }
+// Pick a 3-letter code nobody is using: a room counts as taken if its saved state was updated in the last 12 hours.
+const code3 = () => Array.from(crypto.getRandomValues(new Uint8Array(3)), b => CODE_LETTERS[b % CODE_LETTERS.length]).join("");
+function pickFreeCode() {
+  return new Promise(resolve => {
+    const cands = [...new Set(Array.from({ length: 8 }, code3))];
+    if (!window.mqtt) return resolve(cands[0]);
+    const taken = new Set(); let done = false;
+    const c = mqtt.connect(BROKER, { clientId: "rmrp_" + rid(8), clean: true, reconnectPeriod: 0, connectTimeout: 6000 });
+    const finish = () => { if (done) return; done = true; try { c.end(true); } catch {} resolve(cands.find(x => !taken.has(x)) || rid(5)); };
+    c.on("connect", () => { c.subscribe(cands.map(x => NS + x + "/state"), { qos: 1 }); setTimeout(finish, 1500); });
+    c.on("message", (t, p) => { try { const st = JSON.parse(p.toString()); if (Date.now() - (st.ts || 0) < 12 * 3600e3) taken.add(t.split("/")[2]); } catch {} });
+    c.on("error", finish); setTimeout(finish, 7000);
+  });
+}
 function commit(s) { s.v = (state ? state.v : 0) + 1; state = s; publishState(); render(); syncMine(); }
 
 function drawRound(s) {
@@ -565,12 +580,13 @@ document.addEventListener("click", async e => {
     case "create": {
       const n = $("#nm").value.trim(); if (!n) { $("#nm").focus(); toast("Add your name first"); return; }
       me.name = n.slice(0, 24); store.set("rmr:profile", me);
-      room = rid(5); local = { creating: true }; saveLocal();
+      b.disabled = true; b.textContent = "Setting up your room…";
+      room = await pickFreeCode(); local = { creating: true }; saveLocal();
       history.replaceState(null, "", "#" + room);
       state = newState(); gotState = true; render(); connect(); publishState(); break;
     }
     case "joincode": {
-      const c = ($("#joincode").value || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); if (c.length < 4) { toast("Enter the room code"); return; }
+      const c = ($("#joincode").value || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); if (c.length < 3) { toast("Enter the room code"); return; }
       const n = $("#nm") && $("#nm").value.trim(); if (n) { me.name = n.slice(0, 24); store.set("rmr:profile", me); }
       location.hash = c; location.reload(); break;
     }
