@@ -556,7 +556,7 @@ function submitView() {
 const heat = (k, n) => { const t = n > 1 ? k / (n - 1) : 0; return `color-mix(in oklab, var(--cold) ${Math.round(t * 100)}%, var(--hot))`; };
 function rankList(order, items, answer, heatRef) {
   const byId = Object.fromEntries(items.map(i => [i.id, i.text]));
-  const ref = heatRef || answer; const n = order.length;
+  const ref = heatRef || null; const n = order.length; // heat map turned off (user's request); pass heatRef to re-enable
   return `<ol class="rl${ref ? " heat" : ""}">${order.map((id, i) => `<li class="${answer && answer[i] === id ? "hit" : ""}"${ref ? ` style="background:${heat(ref.indexOf(id), n)}"` : ""}><span class="rk">${i + 1}</span><span class="t">${esc(byId[id])}</span>${answer ? (answer[i] === id ? `<span class="mark">✓ +1</span>` : `<span class="miss">they said #${answer.indexOf(id) + 1}</span>`) : "<span></span>"}</li>`).join("")}</ol>`;
 }
 function rankView() {
@@ -590,7 +590,7 @@ function rankView() {
 function revealView() {
   const r = state.round, res = r.results || {};
   const guessers = Object.keys(res).sort((a, b) => res[b].exact - res[a].exact || res[b].rho - res[a].rho);
-  let out = `<section class="card ans"><p class="eyebrow">Turn ${state.turn + 1} of ${state.order.length} · the answer</p><h2>${esc(name(r.selector))}'s real ranking</h2>${rankList(r.answer, r.items, null, r.answer)}<p class="small muted">Colors follow the Mind’s order: <b style="color:var(--hot)">red</b> is their #1, <b style="color:var(--cold)">blue</b> is their #${r.answer.length}. A perfect reading fades smoothly from red to blue.</p></section>`;
+  let out = `<section class="card ans"><p class="eyebrow">Turn ${state.turn + 1} of ${state.order.length} · the answer</p><h2>${esc(name(r.selector))}'s real ranking</h2>${rankList(r.answer, r.items)}</section>`;
   out += `<section class="card"><h2>The mind readings</h2><div class="reveal-grid">` + (guessers.length ? guessers.map(g => {
     const x = res[g];
     return `<div style="display:flex;flex-direction:column;gap:6px"><div class="guess-h"><h3>${esc(name(g))}${g === me.id ? " (you)" : ""}</h3></div>
